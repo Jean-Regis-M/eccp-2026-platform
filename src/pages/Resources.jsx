@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
+import { ensureArray } from '../utils/safe';
 
 const TYPE_ICONS = { link: '🔗', pdf: '📄', ppt: '📊', word: '📝', youtube: '▶️', drive: '📁' };
 
@@ -49,9 +50,11 @@ export default function Resources() {
     if (r.url) window.open(r.url, '_blank');
   };
 
-  const grouped = data.categories.map(cat => ({
+  const categories = ensureArray(data.categories);
+  const resources = ensureArray(data.resources);
+  const grouped = categories.map(cat => ({
     category: cat,
-    items: data.resources.filter(r => r.category === cat),
+    items: resources.filter(r => r.category === cat),
   })).filter(g => g.items.length > 0);
 
   return (
@@ -68,7 +71,7 @@ export default function Resources() {
 
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setFilter('')} className={`px-4 py-2 rounded-xl text-sm ${!filter ? 'bg-equity-red text-white' : 'bg-white border'}`}>All</button>
-        {data.categories.map(c => (
+        {categories.map(c => (
           <button key={c} onClick={() => setFilter(c)} className={`px-4 py-2 rounded-xl text-sm ${filter === c ? 'bg-equity-red text-white' : 'bg-white border'}`}>{c}</button>
         ))}
       </div>
@@ -78,7 +81,7 @@ export default function Resources() {
           <h3 className="font-semibold">Add Resource</h3>
           <div className="grid md:grid-cols-2 gap-3">
             <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="input-field">
-              {data.categories.map(c => <option key={c}>{c}</option>)}
+              {categories.map(c => <option key={c}>{c}</option>)}
             </select>
             <select value={form.resource_type} onChange={e => setForm({ ...form, resource_type: e.target.value })} className="input-field">
               <option value="link">Link</option>

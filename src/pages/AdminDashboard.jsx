@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import { ensureArray } from '../utils/safe';
 import Modal from '../components/Modal';
 import ProgramTimeline from '../components/ProgramTimeline';
 
@@ -81,6 +82,10 @@ export default function AdminDashboard() {
 
   if (!data) return <div className="animate-pulse text-gray-400">Loading admin dashboard...</div>;
 
+  const stats = data.stats || {};
+  const mentorPerformance = ensureArray(data.mentor_performance);
+  const inactiveScholars = ensureArray(data.inactive_scholars);
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-equity-red to-red-800 rounded-3xl p-8 text-white shadow-xl">
@@ -90,11 +95,11 @@ export default function AdminDashboard() {
 
       <div className="grid md:grid-cols-5 gap-4">
         {[
-          { label: 'Scholars', value: data.stats.total_scholars, color: 'text-equity-red' },
-          { label: 'Mentors', value: data.stats.total_mentors, color: 'text-equity-navy' },
-          { label: 'Sessions', value: data.stats.total_sessions, color: 'text-equity-gold' },
-          { label: 'Profiles Done', value: data.stats.profiles_completed, color: 'text-green-600' },
-          { label: 'Today Attendance', value: data.stats.today_attendance, color: 'text-blue-600' },
+          { label: 'Scholars', value: stats.total_scholars ?? 0, color: 'text-equity-red' },
+          { label: 'Mentors', value: stats.total_mentors ?? 0, color: 'text-equity-navy' },
+          { label: 'Sessions', value: stats.total_sessions ?? 0, color: 'text-equity-gold' },
+          { label: 'Profiles Done', value: stats.profiles_completed ?? 0, color: 'text-green-600' },
+          { label: 'Today Attendance', value: stats.today_attendance ?? 0, color: 'text-blue-600' },
         ].map((s, i) => (
           <div key={i} className="stat-card"><p className={`text-3xl font-bold ${s.color}`}>{s.value}</p><p className="text-sm text-gray-500 mt-1">{s.label}</p></div>
         ))}
@@ -119,7 +124,7 @@ export default function AdminDashboard() {
                 <th className="pb-2">Mentor</th><th className="pb-2">Scholars</th><th className="pb-2">Avg Score</th><th className="pb-2">Sessions</th><th className="pb-2">Messages</th>
               </tr></thead>
               <tbody>
-                {data.mentor_performance.map(m => (
+                {mentorPerformance.map(m => (
                   <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="py-2 font-medium">{m.name}</td>
                     <td className="py-2">{m.mentee_count}</td>
@@ -131,10 +136,10 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
-          {data.inactive_scholars.length > 0 && (
+          {inactiveScholars.length > 0 && (
             <div className="card border-yellow-200 bg-yellow-50">
-              <h3 className="font-semibold text-yellow-800 mb-3">⚠️ Scholars Needing Follow-up ({data.inactive_scholars.length})</h3>
-              {data.inactive_scholars.map(s => (
+              <h3 className="font-semibold text-yellow-800 mb-3">⚠️ Scholars Needing Follow-up ({inactiveScholars.length})</h3>
+              {inactiveScholars.map(s => (
                 <div key={s.id} className="flex justify-between text-sm py-1">
                   <span>{s.name} (PF {s.pf_number}) — {s.mentor_name}</span>
                   <button onClick={async () => { const r = await api.sendCredentials(s.id); setCredResult(r); }} className="text-equity-red hover:underline">Send Credentials</button>

@@ -3,8 +3,15 @@ import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
 
 export default function Landing() {
-  const { user } = useAuth();
-  if (user) return <Navigate to={`/${user.role === 'admin' ? 'admin' : user.role}`} />;
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-12 h-12 border-4 border-equity-red border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+  if (user) return <Navigate to={`/${user.role === 'admin' ? 'admin' : user.role}`} replace />;
 
   return (
     <div className="min-h-screen">

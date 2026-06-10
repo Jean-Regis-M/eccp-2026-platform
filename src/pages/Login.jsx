@@ -35,7 +35,7 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(identifier, password, role);
-      navigate(`/${user.role === 'admin' ? 'admin' : user.role}`);
+      navigate(`/${user.role === 'admin' ? 'admin' : user.role}`, { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {

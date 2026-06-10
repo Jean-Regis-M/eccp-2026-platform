@@ -22,9 +22,14 @@ export default function Sessions() {
   const viewDetails = async (s) => {
     setSelected(s);
     setShowEdit(false);
+    setFeedback([]);
     if (user.role !== 'mentee') {
-      const fb = await api.getSessionFeedback(s.id);
-      setFeedback(fb);
+      try {
+        const fb = await api.getSessionFeedback(s.id);
+        setFeedback(Array.isArray(fb) ? fb : []);
+      } catch {
+        setFeedback([]);
+      }
     }
   };
 

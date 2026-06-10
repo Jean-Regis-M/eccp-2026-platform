@@ -58,9 +58,19 @@ app.get('/api/health', (req, res) => {
 });
 
 const distPath = path.join(__dirname, '..', 'dist');
-app.use(express.static(distPath));
+app.use(express.static(distPath, {
+  index: false,
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else if (/\.(js|css|woff2?|png|jpg|svg|ico|webp)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  },
+}));
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not found' });
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(distPath, 'index.html'), (err) => {
     if (err) res.status(200).send('<h1>ECCP Platform API running. Run npm run dev for full app.</h1>');
   });

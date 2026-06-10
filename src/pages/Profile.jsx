@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
+import { safeJsonParse, ensureArray } from '../utils/safe';
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
@@ -12,7 +13,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (user) {
-      const pd = typeof user.profile_data === 'string' ? JSON.parse(user.profile_data || '{}') : (user.profile_data || {});
+      const pd = safeJsonParse(user.profile_data, {});
       setForm({
         phone: user.phone || '', school: user.school || '',
         career_interests: pd.career_interests || '', subjects: pd.subjects || '', goals: pd.goals || '',
@@ -154,7 +155,7 @@ export default function Profile() {
         <div className="card bg-gradient-to-br from-equity-navy/5 to-equity-red/5">
           <h3 className="font-semibold mb-3">🤖 AI Career Insights</h3>
           <p className="text-sm text-gray-600 mb-3">{insights.pacing_advice}</p>
-          {insights.insights.map((ins, i) => (
+          {ensureArray(insights.insights).map((ins, i) => (
             <div key={i} className="mb-3 p-3 bg-white rounded-xl"><p className="font-medium text-equity-red">{ins.field}</p><p className="text-sm">{ins.recommendation}</p></div>
           ))}
         </div>

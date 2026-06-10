@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api';
+import { ensureArray } from '../utils/safe';
 
 export default function WeeklyReports() {
   const [report, setReport] = useState(null);
@@ -36,8 +37,8 @@ export default function WeeklyReports() {
 
       {report && (
         <div className="space-y-4">
-          <p className="text-gray-500">Report for {report.week_start} to {report.week_end} — {report.sessions.length} sessions</p>
-          {report.sessions.map(s => (
+          <p className="text-gray-500">Report for {report.week_start} to {report.week_end} — {ensureArray(report.sessions).length} sessions</p>
+          {ensureArray(report.sessions).map(s => (
             <div key={s.id} className="card">
               <div className="flex justify-between items-start mb-3">
                 <div>
@@ -46,13 +47,13 @@ export default function WeeklyReports() {
                   <p className="text-sm text-gray-500">{s.description}</p>
                 </div>
                 <span className="badge bg-green-100 text-green-700">
-                  {s.attendance.filter(a => a.attended).length}/{s.attendance.length} attended
+                  {ensureArray(s.attendance).filter(a => a.attended).length}/{ensureArray(s.attendance).length} attended
                 </span>
               </div>
               <div className="grid md:grid-cols-2 gap-4 text-sm">
                 <div>
                   <h4 className="font-medium mb-2">Attendance</h4>
-                  {s.attendance.map(a => (
+                  {ensureArray(s.attendance).map(a => (
                     <div key={a.name} className="flex justify-between py-1 border-b border-gray-50">
                       <span>{a.name}</span><span>{a.attended ? '✅' : '❌'}</span>
                     </div>
@@ -60,7 +61,7 @@ export default function WeeklyReports() {
                 </div>
                 <div>
                   <h4 className="font-medium mb-2">Feedback</h4>
-                  {s.feedback.length === 0 ? <p className="text-gray-400">No feedback yet</p> : s.feedback.map(f => (
+                  {ensureArray(s.feedback).length === 0 ? <p className="text-gray-400">No feedback yet</p> : ensureArray(s.feedback).map(f => (
                     <div key={f.name} className="py-1 border-b border-gray-50">
                       <span className="font-medium">{f.name}</span> — {'⭐'.repeat(f.understanding_rating)}
                       {f.feelings && <p className="text-gray-500 text-xs">{f.feelings}</p>}

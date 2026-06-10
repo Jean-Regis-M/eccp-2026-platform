@@ -30,6 +30,12 @@ async function request(url, options = {}) {
     );
   }
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && localStorage.getItem('eccp_token')) {
+    localStorage.removeItem('eccp_token');
+    if (!window.location.pathname.startsWith('/login') && window.location.pathname !== '/') {
+      window.location.replace('/');
+    }
+  }
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }

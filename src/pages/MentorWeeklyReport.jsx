@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import { ensureArray } from '../utils/safe';
 
 export default function MentorWeeklyReport() {
   const [dates, setDates] = useState({
@@ -45,6 +46,10 @@ export default function MentorWeeklyReport() {
   };
 
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekDates = ensureArray(preview?.weekDates);
+  const attendanceGrid = ensureArray(preview?.attendanceGrid);
+  const followUp = ensureArray(preview?.followUp);
+  const sessions = ensureArray(preview?.sessions);
 
   return (
     <div className="space-y-6">
@@ -74,16 +79,16 @@ export default function MentorWeeklyReport() {
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="p-2 text-left">Scholar</th>
-                    {preview.weekDates.map((d, i) => <th key={d} className="p-2 text-center">{DAYS[i] || d}</th>)}
+                    {weekDates.map((d, i) => <th key={d} className="p-2 text-center">{DAYS[i] || d}</th>)}
                     <th className="p-2">Missed</th>
                     <th className="p-2">Score</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {preview.attendanceGrid.map(m => (
+                  {attendanceGrid.map(m => (
                     <tr key={m.id} className={`border-b ${m.needsFollowUp ? 'bg-red-50' : ''}`}>
                       <td className="p-2 font-medium">{m.name}</td>
-                      {preview.weekDates.map(d => (
+                      {weekDates.map(d => (
                         <td key={d} className={`p-2 text-center font-bold ${m.days[d] === 'P' ? 'text-green-600' : m.days[d] === 'A' ? 'text-red-600' : 'text-gray-300'}`}>
                           {m.days[d] || '—'}
                         </td>
@@ -97,11 +102,11 @@ export default function MentorWeeklyReport() {
             </div>
           </div>
 
-          {preview.followUp.length > 0 && (
+          {followUp.length > 0 && (
             <div className="card bg-red-50 border-red-200">
               <h3 className="font-semibold text-red-800 mb-3">⚠️ Follow-up & Intervention Tracker</h3>
               <div className="space-y-2">
-                {preview.followUp.map(m => (
+                {followUp.map(m => (
                   <div key={m.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-red-100">
                     <span className="text-2xl">🔔</span>
                     <div>
@@ -116,7 +121,7 @@ export default function MentorWeeklyReport() {
 
           <div className="card">
             <h3 className="font-semibold mb-3">Section 2: Session Summaries (Mon–Sat)</h3>
-            {preview.sessions.length === 0 ? <p className="text-gray-400">No sessions this week</p> : preview.sessions.map(s => (
+            {sessions.length === 0 ? <p className="text-gray-400">No sessions this week</p> : sessions.map(s => (
               <div key={s.id} className="border-b py-2 last:border-0">
                 <p className="font-medium text-equity-red">{s.date}: {s.topic}</p>
                 <p className="text-sm text-gray-600">{s.description}</p>
@@ -145,7 +150,7 @@ export default function MentorWeeklyReport() {
             <p className="text-sm text-gray-600 italic">
               I hereby confirm that the information provided in this weekly report is accurate, truthful, and complies with the Equity College Counselling Mentor Guidelines 2026. I understand that misrepresentation may lead to disciplinary action.
             </p>
-            <p className="text-sm mt-4 font-medium">Mentor: {preview.mentor.name} • Date: {new Date().toISOString().split('T')[0]}</p>
+            <p className="text-sm mt-4 font-medium">Mentor: {preview.mentor?.name || '—'} • Date: {new Date().toISOString().split('T')[0]}</p>
             <p className="text-xs text-gray-500 mt-2">Download the PDF, sign it, and email to the org admin for filing.</p>
           </div>
         </>
