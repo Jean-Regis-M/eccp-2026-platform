@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-mesh bg-slate-50 text-slate-800 font-sans antialiased min-h-screen;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-equity-red to-red-700 text-white px-6 py-2.5 rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-200 shadow-md;
+  }
+  .btn-secondary {
+    @apply bg-gradient-to-r from-equity-navy to-equity-dark text-white px-6 py-2.5 rounded-xl font-semibold hover:shadow-lg transition-all duration-200;
+  }
+  .btn-outline {
+    @apply border-2 border-equity-red text-equity-red px-6 py-2.5 rounded-xl font-semibold hover:bg-equity-red hover:text-white transition-all duration-200;
+  }
+  .card {
+    @apply bg-white/90 backdrop-blur rounded-2xl shadow-lg p-6 border border-gray-100/80 hover:shadow-xl transition-shadow duration-300;
+  }
+  .card-glow {
+    @apply card ring-1 ring-equity-red/10;
+  }
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-equity-red/30 focus:border-equity-red outline-none transition bg-white;
+  }
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+  }
+  .badge-admin {
+    @apply badge bg-purple-100 text-purple-800 border border-purple-200;
+  }
+  .badge-mentor {
+    @apply badge bg-blue-100 text-blue-800 border border-blue-200;
+  }
+  .stat-card {
+    @apply card text-center relative overflow-hidden;
+  }
+  .stat-card::before {
+    content: '';
+    @apply absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-equity-red to-equity-gold;
+  }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: linear-gradient(#C8102E, #1A1A2E); border-radius: 3px; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeInUp 0.4s ease-out; }

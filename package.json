@@ -1,0 +1,43 @@
+{
+  "name": "eccp-platform",
+  "version": "1.0.0",
+  "description": "Equity College Counselling Program 2026 - Mentorship Platform",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:all": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "node server/index.js",
+    "client": "vite",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "seed": "node server/seed.js",
+    "setup": "node scripts/check-env.js"
+  },
+  "engines": {
+    "node": ">=20 <=22"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^8.0.10",
+    "pdfkit": "^0.16.0",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.0",
+    "postcss": "^8.4.49",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.1.0",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.0.5"
+  }
+}
