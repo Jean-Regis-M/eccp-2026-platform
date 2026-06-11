@@ -8,6 +8,7 @@ const TYPE_ICONS = { link: '🔗', pdf: '📄', ppt: '📊', word: '📝', youtu
 
 export default function Resources() {
   const { user } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [data, setData] = useState({ categories: [], resources: [] });
   const [filter, setFilter] = useState('');
   const [showAdd, setShowAdd] = useState(false);

@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { useECCPState } from '../hooks/useECCPState';
 
 export default function WeeklyReports() {
+  const { user } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [report, setReport] = useState(null);
   const [dates, setDates] = useState({
     week_start: new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0],

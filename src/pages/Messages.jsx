@@ -5,6 +5,7 @@ import { useECCPState } from '../hooks/useECCPState';
 
 export default function Messages() {
   const { user } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [messages, setMessages] = useState([]);
   const [filter, setFilter] = useState('all');
   const [selected, setSelected] = useState(null);

@@ -6,6 +6,7 @@ import { useECCPState } from '../hooks/useECCPState';
 
 export default function Sessions() {
   const { user } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [sessions, setSessions] = useState([]);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);

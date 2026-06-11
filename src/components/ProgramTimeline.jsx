@@ -5,6 +5,7 @@ import { useECCPState } from '../hooks/useECCPState';
 
 export default function ProgramTimeline({ editable }) {
   const { user } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({ period: '', event: '', description: '' });
   const [showAdd, setShowAdd] = useState(false);

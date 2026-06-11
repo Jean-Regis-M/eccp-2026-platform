@@ -8,6 +8,7 @@ import { useECCPState } from '../hooks/useECCPState';
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [form, setForm] = useState({});
   const [passwords, setPasswords] = useState({ current: '', new: '' });
   const [insights, setInsights] = useState(null);

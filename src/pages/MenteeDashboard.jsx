@@ -13,6 +13,7 @@ const RATING_LABELS = ['Struggled', 'Unclear', 'Okay', 'Good', 'Excellent'];
 
 export default function MenteeDashboard() {
   const { user, refreshUser } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [session, setSession] = useState(null);
   const [progress, setProgress] = useState(null);
   const [messages, setMessages] = useState([]);

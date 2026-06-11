@@ -5,6 +5,7 @@ import { useECCPState } from '../hooks/useECCPState';
 
 export default function Rankings() {
   const { user } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [rankings, setRankings] = useState([]);
   const [exporting, setExporting] = useState(false);
 

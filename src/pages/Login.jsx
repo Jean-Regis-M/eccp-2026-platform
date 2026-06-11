@@ -112,8 +112,7 @@ export default function Login() {
 
           {error && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 text-sm p-3 rounded-lg mb-4">{error}</div>}
 
-          {!showReset ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{config.identifierLabel}</label>
                 <input type={role === 'mentee' ? 'text' : 'email'} value={identifier} onChange={e => setIdentifier(e.target.value)}
@@ -136,7 +135,6 @@ export default function Login() {
                 <p className="font-semibold">To reset your password, contact your org admin!</p>
               </div>
             </form>
-          )
 
           {role === 'mentee' && (
             <p className="text-xs text-slate-400 text-center mt-6">Default password: Cohort@2026 — you must change it after first login</p>

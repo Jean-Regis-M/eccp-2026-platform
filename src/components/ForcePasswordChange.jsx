@@ -5,6 +5,7 @@ import { useECCPState } from '../hooks/useECCPState';
 
 export default function ForcePasswordChange() {
   const { user, refreshUser } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [current, setCurrent] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');

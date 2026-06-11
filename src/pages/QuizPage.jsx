@@ -9,6 +9,7 @@ export default function QuizPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { logAuditEvent } = useECCPState();
   const [quiz, setQuiz] = useState(null);
   const [error, setError] = useState('');
   const [answers, setAnswers] = useState({});
