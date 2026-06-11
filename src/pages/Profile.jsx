@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import { safeJsonParse, ensureArray } from '../utils/safe';
 import { useAutosave } from '../hooks/useAutosave';
+import { validatePassword } from '../utils/passwordValidator';
+import { useECCPState } from '../hooks/useECCPState';
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
@@ -54,10 +56,44 @@ export default function Profile() {
           ai_acknowledgment: form.ai_acknowledgment, mentor_contact_ack: form.mentor_contact_ack,
         },
       });
+      // Log profile update (roster operation)
+      logAuditEvent({
+        category: 'ROSTER',
+        action: 'Profile updated',
+        details: {
+          profileData: {
+            career_interests: form.career_interests, subjects: form.subjects, goals: form.goals,
+            strengths: form.strengths, challenges: form.challenges, extracurriculars: form.extracurriculars,
+            dream_universities: form.dream_universities, hobbies: form.hobbies, languages: form.languages,
+            application_status: form.application_status, target_universities: form.target_universities,
+            universities_applying: form.universities_applying, admitted_university: form.admitted_university,
+            ai_acknowledgment: form.ai_acknowledgment, mentor_contact_ack: form.mentor_contact_ack,
+          }
+        },
+        user
+      });
     } else if (user.role === 'mentor') {
       await api.updateProfile({ mentor_bio: form.mentor_bio, mentor_linkedin: form.mentor_linkedin, mentor_instagram: form.mentor_instagram });
+      // Log mentor profile update (roster operation)
+      logAuditEvent({
+        category: 'ROSTER',
+        action: 'Mentor profile updated',
+        details: {
+          mentor_bio: form.mentor_bio,
+          mentor_linkedin: form.mentor_linkedin,
+          mentor_instagram: form.mentor_instagram
+        },
+        user
+      });
     } else if (user.role === 'admin') {
       await api.updateSettings(form);
+      // Log settings update (system action)
+      logAuditEvent({
+        category: 'SYSTEM',
+        action: 'Email settings updated',
+        details: form,
+        user
+      });
       alert('Settings saved!');
       return;
     }
@@ -170,12 +206,52 @@ export default function Profile() {
         </div>
       )}
 
-      <form onSubmit={async (e) => { e.preventDefault(); await api.changePassword(passwords.current, passwords.new); setPasswords({ current: '', new: '' }); alert('Password updated!'); }} className="card space-y-4">
-        <h3 className="font-semibold">Change Password</h3>
-        <input type="password" value={passwords.current} onChange={e => setPasswords({ ...passwords, current: e.target.value })} placeholder="Current password" className="input-field" required />
-        <input type="password" value={passwords.new} onChange={e => setPasswords({ ...passwords, new: e.target.value })} placeholder="New password (min 8 chars)" className="input-field" minLength={8} required />
-        <button type="submit" className="btn-outline">Update Password</button>
-      </form>
+      <div className="card space-y-4">
+        <h2 className="font-display font-bold text-xl mb-4 flex items-center gap-2">⭐ Activities Optimizer</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Structure your extracurricular activities using the STAR method (Situation, Action, Result) to create impactful descriptions for college applications.
+        </p>
+        <STARActivityOptimizer />
+      </div>
+
+      {/* Password change form - Admins cannot change their own password for security reasons */}
+      {(user.role !== 'admin') && (
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          // Validate new password
+          const validation = validatePassword(passwords.new);
+          if (!validation.valid) {
+            setError(validation.message);
+            return;
+          }
+          // Validate current password? The API will validate, but we can also check if it's not empty.
+          if (!passwords.current) {
+            setError('Current password is required');
+            return;
+          }
+          try {
+            await api.changePassword(passwords.current, passwords.new);
+            setPasswords({ current: '', new: '' });
+            setError('');
+            alert('Password updated!');
+          } catch (err) {
+            setError(err.message);
+          }
+        }} className="card space-y-4">
+          <h3 className="font-semibold">Change Password</h3>
+          <input type="password" value={passwords.current} onChange={e => setPasswords({ ...passwords, current: e.target.value })} placeholder="Current password" className="input-field" required />
+          <input type="password" value={passwords.new} onChange={e => setPasswords({ ...passwords, new: e.target.value })} placeholder="New password (min 8 chars, uppercase, lowercase, number, special character)" className="input-field" minLength={8} required />
+          {error && <div className="bg-red-50 text-red-600 p-2 rounded">{error}</div>}
+          <button type="submit" className="btn-outline">Update Password</button>
+        </form>
+      )}
+
+      {(user.role === 'admin') && (
+        <div className="card space-y-4">
+          <h3 className="font-semibold">Password Change (Admin)</h3>
+          <p className="text-sm text-gray-500">For security reasons, administrators cannot change their own password through this interface. To reset your password, please contact another administrator who can initiate the reset through the secure directory screen.</p>
+        </div>
+      )}
     </div>
   );
 }

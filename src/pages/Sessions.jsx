@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import AttendanceModal from '../components/AttendanceModal';
+import { useECCPState } from '../hooks/useECCPState';
 
 export default function Sessions() {
   const { user } = useAuth();
@@ -46,9 +47,22 @@ export default function Sessions() {
 
   const handleDelete = async (id) => {
     if (!confirm('Remove this session permanently?')) return;
+    // Get session details before deleting for logging
+    const sessionToDelete = sessions.find(s => s.id === id);
     await api.deleteSession(id);
     setSelected(null);
     load(search);
+    // Log session deleted (system action)
+    logAuditEvent({
+      category: 'SYSTEM',
+      action: 'Session deleted',
+      details: {
+        sessionId: id,
+        sessionTopic: sessionToDelete?.topic || 'Unknown',
+        sessionDate: sessionToDelete?.date || null
+      },
+      user
+    });
   };
 
   const startEdit = (s) => {
@@ -58,9 +72,17 @@ export default function Sessions() {
 
   const handleCreateQuiz = async (e) => {
     e.preventDefault();
-    await api.createQuiz({ session_id: selected.id, title: quizForm.title, time_limit_minutes: quizForm.time_limit_minutes, questions: quizForm.questions });
+    const quizData = { session_id: selected.id, title: quizForm.title, time_limit_minutes: quizForm.time_limit_minutes, questions: quizForm.questions };
+    await api.createQuiz(quizData);
     setShowQuiz(false);
     alert(`Quiz published! Scholars have ${quizForm.time_limit_minutes} minutes to complete it.`);
+    // Log quiz created (academic progress)
+    logAuditEvent({
+      category: 'ACADEMIC',
+      action: 'Quiz created',
+      details: quizData,
+      user
+    });
   };
 
   return (

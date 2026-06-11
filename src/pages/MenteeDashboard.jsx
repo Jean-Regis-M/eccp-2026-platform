@@ -4,6 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import ProgramTimeline from '../components/ProgramTimeline';
 import MenteeResponsibilities from '../components/MenteeResponsibilities';
+import SATPrepSimulator from '../components/SATPrepSimulator';
+import StaggeredParent from '../components/StaggeredParent';
+import { useECCPState } from '../hooks/useECCPState';
 
 const RATING_EMOJIS = ['😕', '😐', '🙂', '😊', '🤩'];
 const RATING_LABELS = ['Struggled', 'Unclear', 'Okay', 'Good', 'Excellent'];
@@ -33,10 +36,24 @@ export default function MenteeDashboard() {
     if (!feelings.trim()) { setError('Please share how you feel (required)'); return; }
     if (!questions.trim()) { setError('Please share your questions or thoughts (required)'); return; }
     try {
-      await api.submitFeedback(session.id, { understanding_rating: rating, feelings, questions });
+      const feedbackData = { understanding_rating: rating, feelings, questions };
+      await api.submitFeedback(session.id, feedbackData);
       setFeedbackSent(true);
       refreshUser();
       api.getMyProgress().then(setProgress);
+      // Log feedback submitted (academic progress)
+      logAuditEvent({
+        category: 'ACADEMIC',
+        action: 'Session feedback submitted',
+        details: {
+          sessionId: session.id,
+          sessionTopic: session.topic,
+          rating: rating,
+          hasFeelings: !!feelings.trim(),
+          hasQuestions: !!questions.trim()
+        },
+        user
+      });
     } catch (e) { setError(e.message); }
   };
 
@@ -76,6 +93,14 @@ export default function MenteeDashboard() {
         </ul>
       </div>
 
+      <div className="card space-y-4">
+        <h2 className="font-display font-bold text-xl mb-4 flex items-center gap-2">📚 Academic Preparation</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Sharpen your skills with standardized test practice to stay competitive for global university admissions.
+        </p>
+        <SATPrepSimulator />
+      </div>
+
       <div className="grid md:grid-cols-4 gap-4">
         <div className="stat-card"><p className="text-3xl font-bold text-equity-red">{progress?.score || 0}</p><p className="text-sm text-gray-500 mt-1">Your Score</p></div>
         <div className="stat-card"><p className="text-3xl font-bold text-green-600">{progress?.attendance || 0}</p><p className="text-sm text-gray-500 mt-1">Sessions Attended</p></div>
@@ -105,7 +130,7 @@ export default function MenteeDashboard() {
           <h2 className="font-display font-bold text-xl mb-2">💭 Daily Session Reflection <span className="text-red-500 text-sm">*All fields required</span></h2>
           <p className="text-sm text-gray-500 mb-4">How well did you understand today's topic?</p>
           {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4">{error}</div>}
-          <div className="flex gap-3 justify-center mb-6 flex-wrap">
+          <StaggeredParent className="flex gap-3 justify-center mb-6 flex-wrap">
             {RATING_EMOJIS.map((emoji, i) => (
               <button key={i} onClick={() => setRating(i + 1)} title={RATING_LABELS[i]}
                 className={`flex flex-col items-center p-4 rounded-2xl transition-all ${rating === i + 1 ? 'bg-equity-red/10 scale-110 ring-2 ring-equity-red shadow-lg' : 'hover:bg-gray-100'}`}>
@@ -113,7 +138,7 @@ export default function MenteeDashboard() {
                 <span className="text-xs mt-1 text-gray-500">{RATING_LABELS[i]}</span>
               </button>
             ))}
-          </div>
+          </StaggeredParent>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-700">How do you feel about today's session? *</label>

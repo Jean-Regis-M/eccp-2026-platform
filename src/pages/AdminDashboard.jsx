@@ -3,8 +3,14 @@ import { api } from '../api';
 import { ensureArray } from '../utils/safe';
 import Modal from '../components/Modal';
 import ProgramTimeline from '../components/ProgramTimeline';
+import { useAuth } from '../context/AuthContext';
+import { validatePassword } from '../utils/passwordValidator';
+import { useECCPState } from '../hooks/useECCPState';
+import AdminSurveillanceHub from '../components/AdminSurveillanceHub';
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const { setScholarSuspensionStatus, logAuditEvent } = useECCPState();
   const [data, setData] = useState(null);
   const [users, setUsers] = useState([]);
   const [mentors, setMentors] = useState([]);
@@ -45,14 +51,19 @@ export default function AdminDashboard() {
     alert('Message broadcast sent!');
   };
 
-  const handleResetPassword = async (user) => {
-    setResetModal({ user, loading: true });
+  const handleResetPassword = async (userToReset) => {
+    // Guard: only admin can reset passwords
+    if (user.role !== 'admin') {
+      alert('Unauthorized: Only administrators can reset passwords');
+      return;
+    }
+    setResetModal({ user: userToReset, loading: true });
     try {
-      const res = await api.resetUserPassword(user.id);
-      setResetModal({ user, result: res, loading: false });
+      const res = await api.resetUserPassword(userToReset.id);
+      setResetModal({ user: userToReset, result: res, loading: false });
       load();
     } catch (e) {
-      setResetModal({ user, error: e.message, loading: false });
+      setResetModal({ user: userToReset, error: e.message, loading: false });
     }
   };
 
@@ -68,15 +79,39 @@ export default function AdminDashboard() {
 
   const handleAddScholar = async (e) => {
     e.preventDefault();
-    await api.createUser({ ...newScholar, role: 'mentee', mentor_id: parseInt(newScholar.mentor_id) });
+    // Guard: only admin can add scholars
+    if (user.role !== 'admin') {
+      alert('Unauthorized: Only administrators can add scholars');
+      return;
+    }
+    const scholarData = { ...newScholar, role: 'mentee', mentor_id: parseInt(newScholar.mentor_id) };
+    await api.createUser(scholarData);
     setNewScholar({ pf_number: '', name: '', email: '', gender: 'F', school: '', mentor_id: '' });
-    alert('Scholar added successfully!');
+    // Log scholar added (roster operation)
+    logAuditEvent({
+      category: 'ROSTER',
+      action: 'Scholar added',
+      details: scholarData,
+      user
+    });
     load();
   };
 
   const handleSaveSmtp = async (e) => {
     e.preventDefault();
+    // Guard: only admin can update settings
+    if (user.role !== 'admin') {
+      alert('Unauthorized: Only administrators can update email settings');
+      return;
+    }
     await api.updateSettings(smtpForm);
+    // Log settings update (system action)
+    logAuditEvent({
+      category: 'SYSTEM',
+      action: 'Email settings updated',
+      details: smtpForm,
+      user
+    });
     alert('Email settings saved!');
   };
 
@@ -106,8 +141,10 @@ export default function AdminDashboard() {
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        {['overview', 'sessions', 'messages', 'users', 'mentors', 'history', 'timeline', 'email'].map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition ${tab === t ? 'bg-equity-red text-white shadow-lg' : 'bg-white text-gray-600 hover:bg-gray-100'}`}>{t === 'history' ? 'Platform History' : t === 'email' ? 'Email Settings' : t}</button>
+        {['overview', 'sessions', 'messages', 'users', 'mentors', 'history', 'timeline', 'email', 'surveillance'].map(t => (
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition ${tab === t ? 'bg-equity-red text-white shadow-lg' : 'bg-white text-gray-600 hover:bg-gray-100'}`}>
+            {t === 'history' ? 'Platform History' : t === 'email' ? 'Email Settings' : t === 'surveillance' ? 'Surveillance' : t}
+          </button>
         ))}
         <button onClick={() => api.exportProfiles()} className="btn-outline text-sm ml-auto">📥 Export Profiles</button>
         <button onClick={handleSendReminders} disabled={sendingReminders} className="btn-primary text-sm">
@@ -209,9 +246,51 @@ export default function AdminDashboard() {
                     <td className="p-3 space-x-2">
                       <button onClick={() => handleResetPassword(u)} className="text-xs text-equity-red hover:underline font-medium">Reset Password</button>
                       <button onClick={async () => { const r = await api.sendCredentials(u.id); setCredResult(r); }} className="text-xs text-blue-600 hover:underline">Credentials</button>
-                      <button onClick={async () => { if (confirm(`${u.is_active ? 'Remove' : 'Restore'} ${u.name}?`)) { await api.updateUser(u.id, { is_active: u.is_active ? 0 : 1 }); load(); } }} className="text-xs text-gray-500 hover:underline">
+                      <button onClick={async () => {
+                        // Guard: only admin can update user status
+                        if (user.role !== 'admin') {
+                          alert('Unauthorized: Only administrators can update user status');
+                          return;
+                        }
+                        if (confirm(`${u.is_active ? 'Remove' : 'Restore'} ${u.name}?`)) {
+                          await api.updateUser(u.id, { is_active: u.is_active ? 0 : 1 });
+                          // Log scholar status change (roster operation)
+                          logAuditEvent({
+                            category: 'ROSTER',
+                            action: `${u.is_active ? 'Scholar removed' : 'Scholar restored'}`,
+                            details: { scholarId: u.id, pfNumber: u.pf_number, name: u.name, isActive: !u.is_active },
+                            user
+                          });
+                          load();
+                        }
+                      }} className="text-xs text-gray-500 hover:underline">
                         {u.is_active ? 'Remove' : 'Restore'}
                       </button>
+                      {/* Suspension Controls */}
+                      <div className="flex flex-col space-x-1 px-1 pt-1">
+                        {u.role === 'mentee' && (
+                          <>
+                            <button
+                              onClick={async () => {
+                                // Guard: only admin can update suspension status
+                                if (user.role !== 'admin') {
+                                  alert('Unauthorized: Only administrators can update suspension status');
+                                  return;
+                                }
+                                const isCurrentlySuspended = u.isSuspended || false;
+                                const reason = prompt("Enter reason for suspension:", isCurrentlySuspended ? u.suspensionReason || "" : "");
+                                if (reason !== null) { // User didn't cancel
+                                  setScholarSuspensionStatus(u.pf_number, !isCurrentlySuspended, reason, user);
+                                  load(); // Reload to reflect changes
+                                }
+                              }}
+                              className="text-xs {user.role === 'admin' ? (u.isSuspended ? 'text-equity-red' : 'text-equity-green') : 'text-gray-400'} hover:underline font-medium"
+                            >
+                              {u.isSuspended ? 'Unsuspend' : 'Suspend'}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -290,6 +369,10 @@ export default function AdminDashboard() {
           <input value={smtpForm.smtp_from || ''} onChange={e => setSmtpForm({ ...smtpForm, smtp_from: e.target.value })} placeholder="From Address" className="input-field" />
           <button type="submit" className="btn-primary">Save Email Settings</button>
         </form>
+      )}
+
+      {tab === 'surveillance' && (
+        <AdminSurveillanceHub />
       )}
 
       <Modal open={!!resetModal} onClose={() => setResetModal(null)} title="Password Reset">

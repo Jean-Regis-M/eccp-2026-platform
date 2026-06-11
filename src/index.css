@@ -81,9 +81,65 @@ html.dark ::-webkit-scrollbar-track { background: #1e293b; }
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+@keyframes aurora-blend {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes slow-pulse {
+  0%, 100% {
+    transform: scale(1) translate(0px, 0px);
+    opacity: 0.15;
+  }
+  33% {
+    transform: scale(1.15) translate(30px, -50px);
+    opacity: 0.22;
+  }
+  66% {
+    transform: scale(0.9) translate(-20px, 20px);
+    opacity: 0.12;
+  }
+}
+
+@keyframes slow-pulse-reverse {
+  0%, 100% {
+    transform: scale(1) translate(0px, 0px);
+    opacity: 0.12;
+  }
+  50% {
+    transform: scale(1.2) translate(-40px, 40px);
+    opacity: 0.2;
+  }
+}
+
 .animate-fade-in { animation: fadeInUp 0.4s ease-out; }
 .animate-shimmer {
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
   background-size: 200% 100%;
   animation: shimmer 3s infinite;
+}
+.aurora-animate-glow {
+  background: linear-gradient(
+    -45deg,
+    #020617, /* Deep Slate */
+    #0f172a, /* Dark Indigo */
+    #1e1b4b, /* Midnight Purple */
+    #051515, /* Ambient Dark Cyan */
+    #172554  /* Ocean Deep Blue */
+  );
+  background-size: 400% 400%;
+  animation: aurora-blend 20s ease infinite;
+}
+.aurora-glow-blob-1 {
+  animation: slow-pulse 15s ease-in-out infinite;
+}
+.aurora-glow-blob-2 {
+  animation: slow-pulse-reverse 18s ease-in-out infinite;
 }

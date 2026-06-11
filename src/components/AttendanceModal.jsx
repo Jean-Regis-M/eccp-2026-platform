@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import Modal from './Modal';
+import { Modal } from './Modal';
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
+import { useECCPState } from '../hooks/useECCPState';
 
 export default function AttendanceModal({ session, open, onClose, onSaved }) {
   const [scholars, setScholars] = useState([]);
   const [canMark, setCanMark] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const { logAuditEvent } = useECCPState();
 
   useEffect(() => {
     if (!open || !session) return;
@@ -31,6 +35,18 @@ export default function AttendanceModal({ session, open, onClose, onSaved }) {
       const result = await api.markAttendance(session.id, payload);
       const present = payload.filter(s => s.attended).length;
       alert(result.message || `Attendance saved — ${present} of ${scholars.length} scholars marked present.`);
+      // Log attendance marked (academic progress)
+      logAuditEvent({
+        category: 'ACADEMIC',
+        action: 'Attendance marked',
+        details: {
+          sessionId: session.id,
+          sessionTopic: session.topic,
+          presentCount: present,
+          totalScholars: scholars.length
+        },
+        user
+      });
       onSaved?.();
       onClose();
     } catch (e) { alert(e.message); }

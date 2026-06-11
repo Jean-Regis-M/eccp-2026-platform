@@ -34,6 +34,12 @@
 ### 6. Reset Scholar Password
 - Upon scholar request, contact admin or use mentor reset (if enabled for your account)
 
+### 7. Scholar Support Features
+- **Absence Excuse Gate**: Scholars who miss sessions must submit formal excuses to regain access to certain features
+- **SAT Preparation Simulator**: Scholars can practice SAT-style questions with instant feedback
+- **STAR Activity Optimizer**: Tool to help scholars craft college-activity descriptions within character limits
+- **Global Opportunities Tracker**: Scholars can browse scholarships, fellowships, and academic programs worldwide
+
 ### Mentor Guidelines Reminder
 - Mon–Fri 6–10 PM, Sat 8 AM–5 PM availability
 - Maintain confidentiality per ECCP 2026 guidelines

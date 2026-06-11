@@ -41,6 +41,10 @@ In-app guide: `/guide` (role-specific)
 - Program timeline, responsibilities checklist, daily motivation quotes
 - Personal progress (rankings hidden — mentors/admin only)
 - Messaging to mentor, SAT prep hub, Know Your Mentor
+- **Absence Excuse Submission**: Formal process to explain absences and regain platform access
+- **SAT Preparation Simulator**: Interactive practice questions with explanations
+- **STAR Activity Optimizer**: Tool to craft college-activity descriptions within character limits
+- **Global Opportunities Tracker**: Browse scholarships, fellowships, and academic programs worldwide
 
 ### Mentors
 - **Attendance modal** — tap scholar names to mark present/absent
@@ -49,6 +53,9 @@ In-app guide: `/guide` (role-specific)
 - Weekly report PDF (always downloadable, structured even if empty)
 - Reset own mentees' passwords upon request
 - Resource library management, scholar follow-up alerts
+- **Dashboard Alerts**: Visual indicators for scholars needing follow-up
+- **My Scholars Rank**: Performance tracking for assigned scholars
+- **Weekly Report Generation**: Structured-form PDF reports with guided sections
 
 ### Org Admin
 - Full user management (add/remove scholars, assign mentors, reset passwords)
@@ -57,20 +64,22 @@ In-app guide: `/guide` (role-specific)
 - **Platform history** — chronological audit + login security log
 - Broadcast messages, email reminders (SMTP)
 - Export rankings, profiles, compliance reports
+- **Admin Surveillance Hub**: Real-time monitoring of all platform activities
+- **Global Opportunities Management**: Add, edit, and remove opportunities for scholars
+- **Session Management**: Global control over session topics, dates, and resources
+- **Communication Center**: Broadcast capabilities and automated reminders
 
 ## Security
-
 - Login attempt tracking with lockout after 8 failures
 - JWT authentication, role-based access control
 - Email password reset (scholar email on file)
 - All actions logged in platform history
+- Role-based UIgating (scholars must submit absence excuses to access certain features)
 
 ## Logo
-
 Place at `public/logo.png` (used on site and PDF reports).
 
 ## Production
-
 Set environment variables:
 - `JWT_SECRET` — strong random string
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` — for email
@@ -79,5 +88,4 @@ Set environment variables:
 See [HOSTING.md](HOSTING.md) for full deployment steps.
 
 ## Contact
-
 eccpmentor.regismukiza@gmail.com

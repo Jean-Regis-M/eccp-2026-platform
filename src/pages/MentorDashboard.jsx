@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import Modal from '../components/Modal';
+import { validatePassword } from '../utils/passwordValidator';
 
 export default function MentorDashboard() {
   const { user } = useAuth();
@@ -119,6 +120,17 @@ export default function MentorDashboard() {
         <p className="text-sm text-gray-500 mb-4">Upon scholar request, set a new password. Share it securely with the scholar.</p>
         <input value={newPassword} onChange={e => setNewPassword(e.target.value)} className="input-field mb-4" placeholder="New password" />
         <button onClick={async () => {
+          // Validate new password
+          const validation = validatePassword(newPassword);
+          if (!validation.valid) {
+            alert(validation.message);
+            return;
+          }
+          // Ensure the mentor can only reset their own mentees' passwords
+          if (resetTarget.mentor_id !== user.id) {
+            alert('Unauthorized: You can only reset passwords for your own mentees');
+            return;
+          }
           await api.mentorResetMenteePassword(resetTarget.id, newPassword);
           alert(`Password reset for ${resetTarget.name}. New password: ${newPassword}`);
           setResetTarget(null);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
+import { useECCPState } from '../hooks/useECCPState';
 
 export default function ForcePasswordChange() {
   const { user, refreshUser } = useAuth();
@@ -21,6 +22,17 @@ export default function ForcePasswordChange() {
     try {
       await api.changePassword(current, newPass);
       await refreshUser();
+      // Log forced password change (security)
+      logAuditEvent({
+        category: 'SECURITY',
+        action: 'Forced password change completed',
+        details: {
+          userId: user?.id || null,
+          userRole: user?.role || null,
+          wasMandatory: true
+        },
+        user
+      });
     } catch (err) {
       setError(err.message);
     } finally {

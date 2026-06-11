@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { ensureArray } from '../utils/safe';
+import { useAuth } from '../context/AuthContext';
+import { useECCPState } from '../hooks/useECCPState';
 
 export default function MentorWeeklyReport() {
   const [dates, setDates] = useState({
@@ -10,6 +12,7 @@ export default function MentorWeeklyReport() {
   const [preview, setPreview] = useState(null);
   const [form, setForm] = useState({ challenges: '', actions_taken: '', recommendations: '', goals_next_week: '', reflections: '' });
   const [loading, setLoading] = useState(false);
+  const { scholars, reviewAbsenceExcuse, logAuditEvent } = useECCPState();
 
   const load = async () => {
     setLoading(true);
@@ -23,6 +26,19 @@ export default function MentorWeeklyReport() {
         goals_next_week: data.saved.goals_next_week || '',
         reflections: data.saved.reflections || '',
       });
+      // Log mentor report preview loaded (academic progress)
+      logAuditEvent({
+        category: 'ACADEMIC',
+        action: 'Mentor report preview loaded',
+        details: {
+          weekStart: dates.week_start,
+          weekEnd: dates.week_end,
+          mentorId: preview?.mentor?.id || null,
+          mentorName: preview?.mentor?.name || 'Unknown',
+          hasSavedData: !!data.saved
+        },
+        user
+      });
     } catch (e) { alert(e.message); }
     setLoading(false);
   };
@@ -32,6 +48,17 @@ export default function MentorWeeklyReport() {
   const handleSave = async () => {
     await api.saveMentorReport({ ...dates, ...form });
     alert('Report sections saved! You can now download the PDF.');
+    // Log mentor report sections saved (academic progress)
+    logAuditEvent({
+      category: 'ACADEMIC',
+      action: 'Mentor report sections saved',
+      details: {
+        weekStart: dates.week_start,
+        weekEnd: dates.week_end,
+        formData: { ...form }
+      },
+      user
+    });
     load();
   };
 
@@ -39,9 +66,29 @@ export default function MentorWeeklyReport() {
     try {
       await api.saveMentorReport({ ...dates, ...form });
       await api.downloadMentorReportPdf(dates);
+      // Log mentor report PDF downloaded (academic progress)
+      logAuditEvent({
+        category: 'ACADEMIC',
+        action: 'Mentor report PDF downloaded',
+        details: {
+          weekStart: dates.week_start,
+          weekEnd: dates.week_end
+        },
+        user
+      });
     } catch (e) {
       alert('Downloading report... If sections are empty, the PDF will still include the full structure.');
       await api.downloadMentorReportPdf(dates);
+      // Log mentor report PDF downloaded (academic progress) even in error case
+      logAuditEvent({
+        category: 'ACADEMIC',
+        action: 'Mentor report PDF downloaded',
+        details: {
+          weekStart: dates.week_start,
+          weekEnd: dates.week_end
+        },
+        user
+      });
     }
   };
 
@@ -106,15 +153,63 @@ export default function MentorWeeklyReport() {
             <div className="card bg-red-50 border-red-200">
               <h3 className="font-semibold text-red-800 mb-3">⚠️ Follow-up & Intervention Tracker</h3>
               <div className="space-y-2">
-                {followUp.map(m => (
-                  <div key={m.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-red-100">
-                    <span className="text-2xl">🔔</span>
-                    <div>
-                      <p className="font-medium">{m.name} <span className="text-gray-400 font-mono text-xs">PF {m.pf_number}</span></p>
-                      <p className="text-sm text-red-700">Missed {m.missed} session(s) • Score: {m.score} • Profile: {m.profile_completed ? 'Complete' : 'Incomplete'}</p>
+                {followUp.map(m => {
+                  // Find the scholar record to check excuse status
+                  const scholar = scholars.find(s => s.pfNumber === m.pf_number);
+                  const excuseSubmitted = scholar?.absenceExcuseSubmitted || false;
+
+                  return (
+                    <div key={m.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-red-100">
+                      <span className="text-2xl">🔔</span>
+                      <div>
+                        <p className="font-medium">{m.name} <span className="text-gray-400 font-mono text-xs">PF {m.pf_number}</span></p>
+                        <p className="text-sm text-red-700">Missed {m.missed} session(s) • Score: {m.score} • Profile: {m.profile_completed ? 'Complete' : 'Incomplete'}</p>
+                        {/* Absence Excuse Review - shown if excuse has been submitted */}
+                        {excuseSubmitted && (
+                          <div className="mt-2 space-x-2 text-xs">
+                            <button
+                              onClick={async () => {
+                                // Guard: only mentor/reviewer can excuse
+                                if (user.role !== 'mentor' && user.role !== 'admin') {
+                                  alert('Unauthorized: Only mentors and administrators can review excuses');
+                                  return;
+                                }
+                                if (confirm(`Approve absence excuse for ${m.name}?`)) {
+                                  const { reviewAbsenceExcuse } = await import('../hooks/useECCPState');
+                                  reviewAbsenceExcuse(m.pf_number, 'APPROVE', user);
+                                  load(); // Reload to reflect changes
+                                }
+                              }}
+                              className="bg-green-100 text-green-800 hover:bg-green-200 rounded px-2 py-1"
+                            >
+                              Approve Excuse
+                            </button>
+                            <button
+                              onClick={async () => {
+                                // Guard: only mentor/reviewer can excuse
+                                if (user.role !== 'mentor' && user.role !== 'admin') {
+                                  alert('Unauthorized: Only mentors and administrators can review excuses');
+                                  return;
+                                }
+                                if (confirm(`Dismiss absence excuse for ${m.name}?`)) {
+                                  const { reviewAbsenceExcuse } = await import('../hooks/useECCPState');
+                                  reviewAbsenceExcuse(m.pf_number, 'DISMISS', user);
+                                  load(); // Reload to reflect changes
+                                }
+                              }}
+                              className="bg-red-100 text-red-800 hover:bg-red-200 rounded px-2 py-1"
+                            >
+                              Dismiss Excuse
+                            </button>
+                          </div>
+                        )}
+                        {!excuseSubmitted && m.missed > 0 && (
+                          <p className="mt-1 text-xs text-gray-500">Awaiting excuse submission...</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

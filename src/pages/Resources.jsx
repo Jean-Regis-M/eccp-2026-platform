@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import { ensureArray } from '../utils/safe';
+import { useECCPState } from '../hooks/useECCPState';
 
 const TYPE_ICONS = { link: '🔗', pdf: '📄', ppt: '📊', word: '📝', youtube: '▶️', drive: '📁' };
 
@@ -18,9 +19,22 @@ export default function Resources() {
 
   const handleAddLink = async (e) => {
     e.preventDefault();
-    await api.createResource(form);
+    const resourceData = { ...form };
+    await api.createResource(resourceData);
     setShowAdd(false);
     load();
+    // Log resource added (system action)
+    logAuditEvent({
+      category: 'SYSTEM',
+      action: 'Resource added',
+      details: {
+        category: form.category,
+        title: form.title,
+        resourceType: form.resource_type,
+        url: form.url
+      },
+      user
+    });
   };
 
   const handleUpload = async (e) => {
@@ -35,6 +49,18 @@ export default function Resources() {
     setShowAdd(false);
     setFile(null);
     load();
+    // Log resource uploaded (system action)
+    logAuditEvent({
+      category: 'SYSTEM',
+      action: 'Resource uploaded',
+      details: {
+        category: form.category,
+        title: form.title,
+        resourceType: form.resource_type,
+        fileName: file?.name || 'unknown'
+      },
+      user
+    });
   };
 
   const openResource = async (r) => {
@@ -45,6 +71,18 @@ export default function Resources() {
     if (r.file_path?.startsWith('/api')) {
       const filename = r.file_path.split('/').pop();
       await api.downloadResourceFile(filename, r.title || 'resource');
+      // Log resource downloaded (academic progress)
+      logAuditEvent({
+        category: 'ACADEMIC',
+        action: 'Resource downloaded',
+        details: {
+          resourceId: r.id,
+          resourceTitle: r.title || 'Unknown Resource',
+          resourceType: r.resource_type,
+          fileName: filename
+        },
+        user
+      });
       return;
     }
     if (r.url) window.open(r.url, '_blank');
@@ -122,7 +160,24 @@ export default function Resources() {
                     <p className="text-xs text-gray-400 mt-2">By {r.created_by_name}</p>
                   </div>
                   {user.role !== 'mentee' && (
-                    <button onClick={(e) => { e.stopPropagation(); if (confirm('Delete?')) api.deleteResource(r.id).then(load); }} className="text-red-400 text-xs">✕</button>
+                    <button onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Delete?')) {
+                        // Log resource deleted (system action)
+                        logAuditEvent({
+                          category: 'SYSTEM',
+                          action: 'Resource deleted',
+                          details: {
+                            resourceId: r.id,
+                            resourceTitle: r.title || 'Unknown Resource',
+                            resourceType: r.resource_type,
+                            createdBy: r.created_by_name
+                          },
+                          user
+                        });
+                        api.deleteResource(r.id).then(load);
+                      }
+                    }} className="text-red-400 text-xs">✕</button>
                   )}
                 </div>
               </div>

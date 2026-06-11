@@ -6,6 +6,7 @@ import PageLoader from './components/PageLoader';
 import ScrollToTop from './components/ScrollToTop';
 import RoutePersistence from './components/RoutePersistence';
 import ForcePasswordChange from './components/ForcePasswordChange';
+import { useECCPState } from './hooks/useECCPState';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
@@ -24,6 +25,9 @@ const MentorWeeklyReport = lazy(() => import('./pages/MentorWeeklyReport'));
 const Resources = lazy(() => import('./pages/Resources'));
 const UserGuide = lazy(() => import('./pages/UserGuide'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const GlobalOpportunitiesTracker = lazy(() => import('./components/GlobalOpportunitiesTracker'));
+const SuspensionGate = lazy(() => import('./components/SuspensionGate'));
+const AbsenceExcuseGate = lazy(() => import('./components/AbsenceExcuseGate'));
 
 function ProtectedRoute({ children, roles, blockMentee }) {
   const { user, loading, serverUnreachable, retrySession } = useAuth();
@@ -65,6 +69,14 @@ function withLayout(Page, guardProps = {}) {
 }
 
 export default function App() {
+  const { user } = useAuth();
+  const { scholars } = useECCPState();
+
+  // Check if user is a mentee and needs gating
+  const menteeScholar = user && user.role === 'mentee' ? scholars.find(s => s.pfNumber === user.pf_number) : null;
+  const isSuspended = menteeScholar && menteeScholar.isSuspended;
+  const hasMissedSession = menteeScholar && menteeScholar.lastMissedSessionId && !menteeScholar.absenceExcuseSubmitted;
+
   return (
     <>
       <ScrollToTop />
@@ -74,6 +86,30 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login/:role" element={<Login />} />
+
+          {/* Gating Screens - these take precedence over regular routes */}
+          {user && user.role === 'mentee' && (
+            <>
+              {/* Suspension Gate - takes highest priority */}
+              {isSuspended && (
+                <Route path="/mentee" element={
+                  <SuspensionGate />
+                } />
+              )}
+
+              {/* Absence Excuse Gate - checked if not suspended */}
+              {!isSuspended && hasMissedSession && (
+                <Route path="/mentee" element={
+                  <AbsenceExcuseGate onExcuseSubmitted={() => {
+                    // In a real implementation, this would trigger a refresh or redirect
+                    // For now, we'll rely on the useEffect in mentee dashboard to re-check
+                  }} />
+                } />
+              )}
+            </>
+          )}
+
+          {/* Regular Routes */}
           <Route path="/mentee" element={withLayout(MenteeDashboard, { roles: ['mentee'] })} />
           <Route path="/mentor" element={withLayout(MentorDashboard, { roles: ['mentor', 'admin'] })} />
           <Route path="/admin" element={withLayout(AdminDashboard, { roles: ['admin'] })} />
@@ -87,6 +123,7 @@ export default function App() {
           <Route path="/reports" element={withLayout(WeeklyReports, { roles: ['admin'] })} />
           <Route path="/mentor-report" element={withLayout(MentorWeeklyReport, { roles: ['mentor', 'admin'] })} />
           <Route path="/resources" element={withLayout(Resources)} />
+          <Route path="/opportunities" element={withLayout(GlobalOpportunitiesTracker, {})} />
           <Route path="/guide" element={withLayout(UserGuide)} />
           <Route path="*" element={<NotFound />} />
         </Routes>

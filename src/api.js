@@ -100,7 +100,7 @@ export const api = {
   getAllUsers: () => request('/users/admin/all'),
   createUser: (data) => request('/users/admin/create', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (id, data) => request(`/users/admin/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  resetUserPassword: (id, password) => request(`/users/admin/reset-password/${id}`, { method: 'POST', body: JSON.stringify({ password }) }),
+  resetUserPassword: (id) => request(`/users/admin/reset-password/${id}`, { method: 'POST', body: JSON.stringify({}) }),
 
   getQuizzes: () => request('/quizzes'),
   getQuiz: (id) => request(`/quizzes/${id}`),

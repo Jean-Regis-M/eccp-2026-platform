@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
+import { useECCPState } from '../hooks/useECCPState';
 
 export default function Messages() {
   const { user } = useAuth();
@@ -27,19 +28,42 @@ export default function Messages() {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    await api.sendMessage(form);
+    const messageData = { ...form };
+    await api.sendMessage(messageData);
     setForm({ target_type: 'mentor_group', subject: '', content: '' });
     load();
     alert('Message sent!');
+    // Log message sent (system action)
+    logAuditEvent({
+      category: 'SYSTEM',
+      action: 'Message sent',
+      details: {
+        targetType: form.target_type,
+        subject: form.subject,
+        contentLength: form.content.length
+      },
+      user
+    });
   };
 
   const handleReply = async () => {
     if (!reply.trim() || !selected) return;
+    const replyData = { id: selected.id, content: reply };
     await api.replyMessage(selected.id, reply);
     setReply('');
     const updated = await api.getMessages();
     setMessages(updated);
     setSelected(updated.find(m => m.id === selected.id));
+    // Log reply sent (system action)
+    logAuditEvent({
+      category: 'SYSTEM',
+      action: 'Reply sent',
+      details: {
+        messageId: selected.id,
+        replyLength: reply.length
+      },
+      user
+    });
   };
 
   const sourceBadge = (m) => {

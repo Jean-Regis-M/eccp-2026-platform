@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import { ensureArray } from '../utils/safe';
+import { useECCPState } from '../hooks/useECCPState';
 
 export default function QuizPage() {
   const { id } = useParams();
@@ -59,6 +60,19 @@ export default function QuizPage() {
     try {
       const res = await api.submitQuiz(id, answers);
       setResult(res);
+      // Log quiz submission (academic progress)
+      logAuditEvent({
+        category: 'ACADEMIC',
+        action: 'Quiz submitted',
+        details: {
+          quizId: id,
+          quizTitle: quiz?.title || 'Unknown Quiz',
+          score: res.score,
+          maxScore: res.max_score,
+          percentage: res.percentage
+        },
+        user
+      });
     } catch (e) {
       setError(e.message || 'Failed to submit quiz');
     }

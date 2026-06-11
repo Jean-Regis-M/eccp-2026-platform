@@ -40,4 +40,16 @@
 - All admin actions logged in audit trail
 - Set strong JWT_SECRET when deploying online
 
+## Scholar Support Features (Admin Oversight)
+- **Absence Excuse Gate**: Admins can monitor scholars who have missed sessions and need to submit excuses
+- **Suspension Gate**: Administrative holds that require mentor advising review to restore access
+- **Admin Surveillance Hub**: Real-time monitoring of all platform activities with filtering and search
+- **Global Opportunities Management**: Add, edit, and remove opportunities for scholars to browse
+
+### Admin-Specific Tools
+- **Platform History**: Chronological audit trail of all platform activities
+- **Global Opportunities Tracker**: Manage scholarships, fellowships, and academic programs available to scholars
+- **Session Management Center**: Create, edit, and delete sessions globally
+- **Communication Center**: Broadcast messages and configure automated email reminders
+
 Contact: eccpmentor.regismukiza@gmail.com

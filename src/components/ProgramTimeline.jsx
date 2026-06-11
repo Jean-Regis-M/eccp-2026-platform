@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useECCPState } from '../hooks/useECCPState';
 
 export default function ProgramTimeline({ editable }) {
   const { user } = useAuth();
@@ -13,10 +14,18 @@ export default function ProgramTimeline({ editable }) {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    await api.createTimelineItem(form);
+    const timelineData = { ...form };
+    await api.createTimelineItem(timelineData);
     setForm({ period: '', event: '', description: '' });
     setShowAdd(false);
     load();
+    // Log timeline item added (system action)
+    logAuditEvent({
+      category: 'SYSTEM',
+      action: 'Timeline item added',
+      details: timelineData,
+      user
+    });
   };
 
   return (

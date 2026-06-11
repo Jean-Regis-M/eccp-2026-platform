@@ -1,17 +1,45 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
+import { useECCPState } from '../hooks/useECCPState';
 
 export default function Rankings() {
   const { user } = useAuth();
   const [rankings, setRankings] = useState([]);
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => { api.getRankings().then(setRankings).catch(() => {}); }, []);
+  useEffect(() => {
+    api.getRankings().then(data => {
+      setRankings(data);
+      // Log rankings viewed (academic progress)
+      logAuditEvent({
+        category: 'ACADEMIC',
+        action: 'Rankings viewed',
+        details: {
+          userRole: user.role,
+          rankingsCount: data.length,
+          topScore: data.length > 0 ? data[0].score : 0
+        },
+        user
+      });
+    }).catch(() => {});
+  }, []);
 
   const handleExport = async () => {
     setExporting(true);
-    try { await api.exportRankings(); } catch (e) { alert(e.message); }
+    try {
+      await api.exportRankings();
+      // Log rankings exported (system action)
+      logAuditEvent({
+        category: 'SYSTEM',
+        action: 'Rankings exported',
+        details: {
+          userRole: user.role,
+          rankingsCount: rankings.length
+        },
+        user
+      );
+    } catch (e) { alert(e.message); }
     setExporting(false);
   };
 
