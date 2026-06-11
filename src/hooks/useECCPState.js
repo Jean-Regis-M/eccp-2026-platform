@@ -382,7 +382,7 @@ export function useECCPState() {
   // NEW AUTOMATION & DISCIPLINARY ACTION HANDLERS
 
   // 1. Action: Admin toggles student suspension status
-  const setScholarSuspensionStatus = (pfNumber: string, isSuspended: boolean, reason: string = "", user) => {
+  const setScholarSuspensionStatus = (pfNumber, isSuspended, reason = "", user) => {
     setScholars(prev => prev.map(scholar => {
       if (scholar.pfNumber === pfNumber) {
         return {
@@ -395,11 +395,16 @@ export function useECCPState() {
     }));
 
     const statusLabel = isSuspended ? "TEMPORARILY SUSPENDED" : "ACTIVATED";
-    addAuditLog(`Administrative action: ${statusLabel} student ${pfNumber}`, pfNumber, "ROSTER", user);
+    logAuditEvent({
+      category: 'ROSTER',
+      action: `Administrative action: ${statusLabel} student ${pfNumber}`,
+      details: { pfNumber, reason, isSuspended },
+      user
+    });
   };
 
   // 2. Action: Scholar submits an excuse for missing attendance to unlock platform
-  const submitAbsenceExcuse = (pfNumber: string, sessionId: string, reasonText: string, user) => {
+  const submitAbsenceExcuse = (pfNumber, sessionId, reasonText, user) => {
     setScholars(prev => prev.map(scholar => {
       if (scholar.pfNumber === pfNumber) {
         return {
@@ -412,11 +417,16 @@ export function useECCPState() {
       return scholar;
     }));
 
-    addAuditLog(`Scholar submitted an official excuse for missing Session ${sessionId}: ${reasonText.substring(0, 30)}...`, pfNumber, "AUTH", user);
+    logAuditEvent({
+      category: 'AUTH',
+      action: `Scholar submitted an official excuse for missing Session ${sessionId}: ${reasonText.substring(0, 30)}...`,
+      details: { pfNumber, sessionId, reasonText },
+      user
+    });
   };
 
   // 3. Action: Mentor reviews and resets the skip check gate
-  const reviewAbsenceExcuse = (pfNumber: string, action: 'APPROVE' | 'DISMISS', user) => {
+  const reviewAbsenceExcuse = (pfNumber, action, user) => {
     setScholars(prev => prev.map(scholar => {
       if (scholar.pfNumber === pfNumber) {
         return {
@@ -428,7 +438,12 @@ export function useECCPState() {
       }
       return scholar;
     }));
-    addAuditLog(`Counselor reviewed and ${action}ED absence excuse for ${pfNumber}`, pfNumber, "ROSTER", user);
+    logAuditEvent({
+      category: 'ROSTER',
+      action: `Counselor reviewed and ${action}ED absence excuse for ${pfNumber}`,
+      details: { pfNumber, action },
+      user
+    });
   };
 
   // Admin-Only Mutative CRUD Action Handlers for Global Opportunities
@@ -517,7 +532,6 @@ export function useECCPState() {
     setOpportunities,
     setPasswords,
     logAuditEvent,
-    addAuditLog,
     addOpportunityByAdmin,
     deleteOpportunityByAdmin,
     calculateScholarCompleteness,
