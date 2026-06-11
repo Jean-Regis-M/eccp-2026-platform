@@ -104,7 +104,8 @@ export default function MentorDashboard() {
                   <td className="py-3 pr-4">{m.profile_completed ? '✅' : <span className="text-red-500">⏳</span>}</td>
                   <td className="py-3 pr-4">{m.attendance || 0}</td>
                   <td className="py-3 pr-4"><span className="badge bg-equity-red/10 text-equity-red font-bold">{m.score || 0}</span></td>
-                  <td className="py-3">
+                  <td className="py-3 flex flex-wrap gap-2">
+                    <button onClick={() => api.downloadScholarPdf(m.id, m.pf_number).catch(e => alert(e.message))} className="text-xs text-equity-navy dark:text-equity-gold hover:underline">📥 PDF</button>
                     <button onClick={() => { setResetTarget(m); setNewPassword('Cohort@2026'); }} className="text-xs text-equity-red hover:underline">Reset Password</button>
                   </td>
                 </tr>

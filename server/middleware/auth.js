@@ -6,7 +6,7 @@ export function generateToken(user) {
   return jwt.sign(
     { id: user.id, role: user.role, email: user.email, pf_number: user.pf_number },
     JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: '7d' }
   );
 }
 

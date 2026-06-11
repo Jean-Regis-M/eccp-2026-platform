@@ -1,8 +1,20 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import db from '../db.js';
+import PDFDocument from 'pdfkit';
+import db, { logHistory } from '../db.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { logAdminAction, logActivity } from '../utils/audit.js';
+
+function recordScholarProgress(userId, recordedBy = null) {
+  const score = computeScore(userId);
+  const attendance = db.prepare('SELECT COUNT(*) as c FROM attendance WHERE user_id = ? AND attended = 1').get(userId).c;
+  const user = db.prepare('SELECT profile_completed, profile_data FROM users WHERE id = ?').get(userId);
+  const pd = JSON.parse(user?.profile_data || '{}');
+  db.prepare(`
+    INSERT INTO scholar_progress_history (user_id, score, attendance, profile_completed, application_status, snapshot_json, recorded_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(userId, score, attendance, user?.profile_completed || 0, pd.application_status || '', JSON.stringify(pd), recordedBy);
+}
 
 const router = Router();
 
@@ -191,6 +203,10 @@ router.put('/profile', authenticate, (req, res) => {
   }
 
   db.prepare('INSERT INTO activity_log (user_id, action, details) VALUES (?, ?, ?)').run(req.user.id, 'profile_update', 'Profile updated');
+  if (user.role === 'mentee') {
+    recordScholarProgress(req.user.id, req.user.id);
+    logHistory(req.user.id, user.name, 'mentee', 'profile_update', 'mentee', req.user.id, 'Profile saved');
+  }
   res.json({ message: 'Profile updated' });
 });
 
@@ -232,7 +248,7 @@ router.post('/admin/reset-password/:id', authenticate, requireRole('admin'), (re
 
   const defaultPass = password || (user.role === 'mentee' ? 'Cohort@2026' : 'Equity@2026');
   const hash = bcrypt.hashSync(defaultPass, 10);
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.params.id);
+  db.prepare('UPDATE users SET password_hash = ?, must_change_password = ? WHERE id = ?').run(hash, user.role === 'mentee' ? 1 : 0, req.params.id);
   logAdminAction(req.user.id, 'reset_password', user.role, user.id, `Reset password for ${user.name}`);
   res.json({
     message: 'Password reset successfully',
@@ -240,6 +256,87 @@ router.post('/admin/reset-password/:id', authenticate, requireRole('admin'), (re
     user: { id: user.id, name: user.name, email: user.email, pf_number: user.pf_number, role: user.role },
     login_hint: user.role === 'mentee' ? `PF Number: ${user.pf_number}` : `Email: ${user.email}`,
   });
+});
+
+router.get('/export/scholar-pdf/:id', authenticate, requireRole('admin', 'mentor'), (req, res) => {
+  const mentee = db.prepare(`
+    SELECT u.*, m.name as mentor_name, m.email as mentor_email
+    FROM users u LEFT JOIN users m ON u.mentor_id = m.id
+    WHERE u.id = ? AND u.role = 'mentee'
+  `).get(req.params.id);
+  if (!mentee) return res.status(404).json({ error: 'Scholar not found' });
+  if (req.user.role === 'mentor' && mentee.mentor_id !== req.user.id) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  const pd = JSON.parse(mentee.profile_data || '{}');
+  const score = computeScore(mentee.id);
+  const attendance = db.prepare('SELECT COUNT(*) as c FROM attendance WHERE user_id = ? AND attended = 1').get(mentee.id).c;
+  const quizzes = db.prepare('SELECT COUNT(*) as c FROM quiz_submissions WHERE user_id = ?').get(mentee.id).c;
+  const feedback = db.prepare('SELECT COUNT(*) as c FROM feedback WHERE user_id = ?').get(mentee.id).c;
+  const history = db.prepare('SELECT * FROM scholar_progress_history WHERE user_id = ? ORDER BY recorded_at DESC LIMIT 12').all(mentee.id);
+
+  const doc = new PDFDocument({ margin: 50, size: 'A4' });
+  const filename = `ECCP-Scholar-${mentee.pf_number || mentee.id}.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  doc.pipe(res);
+
+  doc.fillColor('#C8102E').font('Helvetica-Bold').fontSize(20).text('ECCP 2026 — Scholar Profile', { align: 'center' });
+  doc.moveDown(0.3);
+  doc.fillColor('#64748B').font('Helvetica').fontSize(10).text('Equity College Counselling Program', { align: 'center' });
+  doc.moveDown(1);
+
+  const section = (title) => {
+    doc.moveDown(0.5);
+    doc.fillColor('#C8102E').font('Helvetica-Bold').fontSize(12).text(title);
+    doc.fillColor('#000').font('Helvetica').fontSize(10);
+    doc.moveDown(0.3);
+  };
+  const field = (label, value) => {
+    doc.font('Helvetica-Bold').text(`${label}: `, { continued: true }).font('Helvetica').text(value || '—');
+  };
+
+  section('Personal Information');
+  field('Name', mentee.name);
+  field('PF Number', mentee.pf_number);
+  field('Email', mentee.email);
+  field('Phone', mentee.phone);
+  field('School', mentee.school);
+  field('Gender', mentee.gender);
+  field('Mentor', mentee.mentor_name);
+
+  section('Academic & Career Profile');
+  field('Subjects', pd.subjects);
+  field('Career Interests', pd.career_interests);
+  field('Goals', pd.goals);
+  field('Strengths', pd.strengths);
+  field('Areas for Growth', pd.challenges);
+  field('Extracurriculars', pd.extracurriculars);
+  field('Dream Universities', pd.dream_universities);
+  field('Target Universities', pd.target_universities);
+  field('Application Status', pd.application_status);
+
+  section('Performance Metrics');
+  field('Engagement Score', String(score));
+  field('Sessions Attended', String(attendance));
+  field('Quizzes Completed', String(quizzes));
+  field('Feedback Submitted', String(feedback));
+  field('Profile Complete', mentee.profile_completed ? 'Yes' : 'No');
+
+  if (history.length) {
+    section('Progress History (Recent)');
+    for (const h of history) {
+      doc.font('Helvetica').fontSize(9).text(
+        `${new Date(h.recorded_at).toLocaleDateString()} — Score: ${h.score} | Attendance: ${h.attendance} | Status: ${h.application_status || '—'}`
+      );
+    }
+  }
+
+  doc.moveDown(1);
+  doc.fillColor('#94a3b8').font('Helvetica').fontSize(8)
+    .text(`Generated ${new Date().toLocaleString()} by ECCP Platform`, { align: 'center' });
+  doc.end();
 });
 
 router.get('/export/profiles', authenticate, requireRole('admin', 'mentor'), (req, res) => {

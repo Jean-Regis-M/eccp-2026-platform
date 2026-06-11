@@ -239,6 +239,9 @@ export default function AdminDashboard() {
 
       {tab === 'history' && platformHistory && (
         <div className="space-y-4">
+          <div className="flex justify-end">
+            <button onClick={() => api.downloadPlatformHistory().catch(e => alert(e.message))} className="btn-primary text-sm">📥 Download Full History (CSV)</button>
+          </div>
           <div className="card overflow-x-auto max-h-[50vh]">
             <h3 className="font-semibold mb-4">🔍 Platform History — Full Chronological Log</h3>
             <table className="w-full text-sm">

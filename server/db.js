@@ -270,8 +270,24 @@ const migrations = [
   'ALTER TABLE quizzes ADD COLUMN opens_at TEXT',
   'ALTER TABLE quizzes ADD COLUMN closes_at TEXT',
   'ALTER TABLE quiz_submissions ADD COLUMN missed INTEGER DEFAULT 0',
+  'ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0',
 ];
 for (const sql of migrations) { try { db.exec(sql); } catch {} }
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS scholar_progress_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    score REAL DEFAULT 0,
+    attendance INTEGER DEFAULT 0,
+    profile_completed INTEGER DEFAULT 0,
+    application_status TEXT DEFAULT '',
+    snapshot_json TEXT DEFAULT '{}',
+    recorded_by INTEGER REFERENCES users(id),
+    recorded_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_scholar_progress_user ON scholar_progress_history(user_id);
+`);
 
 // Seed default timeline if empty
 const tlCount = db.prepare('SELECT COUNT(*) as c FROM program_timeline').get().c;

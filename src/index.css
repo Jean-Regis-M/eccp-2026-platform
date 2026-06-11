@@ -4,7 +4,13 @@
 
 @layer base {
   body {
-    @apply bg-mesh bg-slate-50 text-slate-800 font-sans antialiased min-h-screen;
+    @apply bg-mesh bg-slate-50 text-slate-800 font-sans antialiased min-h-screen transition-colors duration-300;
+  }
+  html.dark body {
+    @apply bg-equity-dark text-slate-100;
+    background-image: radial-gradient(at 40% 20%, rgba(200,16,46,0.12) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, rgba(30,41,59,0.4) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, rgba(212,168,67,0.08) 0px, transparent 50%);
   }
 }
 
@@ -21,11 +27,20 @@
   .card {
     @apply bg-white/90 backdrop-blur rounded-2xl shadow-lg p-6 border border-gray-100/80 hover:shadow-xl transition-shadow duration-300;
   }
+  html.dark .card {
+    @apply bg-equity-navy/80 border-slate-700/50 text-slate-100;
+  }
   .card-glow {
     @apply card ring-1 ring-equity-red/10;
   }
+  html.dark .card-glow {
+    @apply ring-equity-red/30;
+  }
   .input-field {
     @apply w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-equity-red/30 focus:border-equity-red outline-none transition bg-white;
+  }
+  html.dark .input-field {
+    @apply bg-equity-dark/60 border-slate-600 text-white placeholder:text-slate-400;
   }
   .badge {
     @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
@@ -43,14 +58,32 @@
     content: '';
     @apply absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-equity-red to-equity-gold;
   }
+  .shine-card {
+    @apply relative overflow-hidden;
+  }
+  .shine-card::after {
+    content: '';
+    @apply absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.08) 55%, transparent 60%);
+  }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+html.dark ::-webkit-scrollbar-track { background: #1e293b; }
 ::-webkit-scrollbar-thumb { background: linear-gradient(#C8102E, #1A1A2E); border-radius: 3px; }
 
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
 .animate-fade-in { animation: fadeInUp 0.4s ease-out; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}

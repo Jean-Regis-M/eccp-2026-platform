@@ -121,26 +121,26 @@ function seed() {
   }
 
   const insertUser = db.prepare(`
-    INSERT INTO users (pf_number, email, password_hash, role, name, gender, phone, school, mentor_id, mentor_bio, mentor_linkedin, mentor_instagram)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (pf_number, email, password_hash, role, name, gender, phone, school, mentor_id, mentor_bio, mentor_linkedin, mentor_instagram, must_change_password)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const mentorIds = {};
 
   for (const admin of admins) {
-    insertUser.run(null, admin.email.toLowerCase(), ADMIN_PASSWORD, 'admin', admin.name, null, null, null, null, '', '', '');
+    insertUser.run(null, admin.email.toLowerCase(), ADMIN_PASSWORD, 'admin', admin.name, null, null, null, null, '', '', '', 0);
   }
 
   for (const mentor of mentors) {
     const result = insertUser.run(null, mentor.email.toLowerCase(), MENTOR_PASSWORD, 'mentor', mentor.name, null, null, null, null,
       `Dedicated ECCP 2026 mentor committed to guiding scholars through the college application journey.`,
-      '', '');
+      '', '', 0);
     mentorIds[mentor.name] = result.lastInsertRowid;
   }
 
   for (const mentee of mentees) {
     const mentorId = mentorIds[mentee.mentor] || null;
-    insertUser.run(mentee.pf, mentee.email.toLowerCase(), SCHOLAR_PASSWORD, 'mentee', mentee.name, mentee.gender, '', '', mentorId, '', '', '');
+    insertUser.run(mentee.pf, mentee.email.toLowerCase(), SCHOLAR_PASSWORD, 'mentee', mentee.name, mentee.gender, '', '', mentorId, '', '', '', 1);
   }
 
   const insertSession = db.prepare(`

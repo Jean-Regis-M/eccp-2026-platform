@@ -4,6 +4,8 @@ import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import PageLoader from './components/PageLoader';
 import ScrollToTop from './components/ScrollToTop';
+import RoutePersistence from './components/RoutePersistence';
+import ForcePasswordChange from './components/ForcePasswordChange';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
@@ -24,11 +26,23 @@ const UserGuide = lazy(() => import('./pages/UserGuide'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function ProtectedRoute({ children, roles, blockMentee }) {
-  const { user, loading } = useAuth();
+  const { user, loading, serverUnreachable, retrySession } = useAuth();
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-12 h-12 border-4 border-equity-red border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+  if (!user && serverUnreachable && localStorage.getItem('eccp_token')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="card max-w-md text-center">
+          <p className="text-4xl mb-4">⏳</p>
+          <h2 className="font-display text-xl font-bold mb-2">Reconnecting to ECCP...</h2>
+          <p className="text-sm text-gray-500 mb-4">The server is starting up. Your session is preserved — please wait.</p>
+          <button onClick={retrySession} className="btn-primary">Retry Connection</button>
+        </div>
       </div>
     );
   }
@@ -54,6 +68,8 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      <RoutePersistence />
+      <ForcePasswordChange />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<Landing />} />

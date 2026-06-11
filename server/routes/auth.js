@@ -48,6 +48,11 @@ router.post('/login', (req, res) => {
   logHistory(user.id, user.name, role, 'login', 'user', user.id, ip);
 
   const { password_hash, ...safeUser } = user;
+  const stillDefaultPass = user.role === 'mentee' && bcrypt.compareSync('Cohort@2026', user.password_hash);
+  safeUser.must_change_password = !!user.must_change_password || stillDefaultPass;
+  if (stillDefaultPass && !user.must_change_password) {
+    db.prepare('UPDATE users SET must_change_password = 1 WHERE id = ?').run(user.id);
+  }
   res.json({ token: generateToken(user), user: safeUser });
 });
 
@@ -61,13 +66,18 @@ router.post('/change-password', authenticate, (req, res) => {
     return res.status(401).json({ error: 'Current password is incorrect' });
   }
   const hash = bcrypt.hashSync(newPassword, 10);
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.user.id);
+  db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(hash, req.user.id);
   logHistory(req.user.id, user.name, user.role, 'password_change', 'user', user.id, '');
   res.json({ message: 'Password updated successfully' });
 });
 
 router.post('/reset-password-request', async (req, res) => {
   const { identifier, role } = req.body;
+  if (role === 'mentee') {
+    return res.status(403).json({
+      error: 'Scholars cannot reset passwords themselves. Please contact your mentor to reset your password.',
+    });
+  }
   let user;
   if (role === 'mentee') {
     user = db.prepare('SELECT * FROM users WHERE pf_number = ? AND role = ?').get(identifier, 'mentee');
@@ -116,7 +126,7 @@ router.post('/mentor-reset-mentee/:id', authenticate, (req, res) => {
 
   const newPass = req.body.password || 'Cohort@2026';
   const hash = bcrypt.hashSync(newPass, 10);
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, mentee.id);
+  db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(hash, mentee.id);
   logHistory(req.user.id, '', req.user.role, 'mentor_reset_password', 'mentee', mentee.id, mentee.name);
 
   res.json({
@@ -127,8 +137,11 @@ router.post('/mentor-reset-mentee/:id', authenticate, (req, res) => {
 });
 
 router.get('/me', authenticate, (req, res) => {
-  const user = db.prepare('SELECT id, pf_number, email, role, name, gender, phone, school, mentor_id, profile_completed, profile_data, mentor_bio, mentor_linkedin, mentor_instagram, mentor_photo, last_login, created_at FROM users WHERE id = ?').get(req.user.id);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  if (!row) return res.status(404).json({ error: 'User not found' });
+  const stillDefaultPass = row.role === 'mentee' && bcrypt.compareSync('Cohort@2026', row.password_hash);
+  const { password_hash, ...user } = row;
+  user.must_change_password = !!row.must_change_password || stillDefaultPass;
   if (user.mentor_id) {
     user.mentor = db.prepare('SELECT id, name, email, mentor_bio, mentor_linkedin, mentor_instagram, mentor_photo FROM users WHERE id = ?').get(user.mentor_id);
   }

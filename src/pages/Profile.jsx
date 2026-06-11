@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import { safeJsonParse, ensureArray } from '../utils/safe';
+import { useAutosave } from '../hooks/useAutosave';
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
@@ -10,11 +11,13 @@ export default function Profile() {
   const [insights, setInsights] = useState(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const restoredRef = useRef(false);
+  const { draft, lastSaved, clearDraft } = useAutosave('profile', form, { enabled: !!user && Object.keys(form).length > 0 });
 
   useEffect(() => {
     if (user) {
       const pd = safeJsonParse(user.profile_data, {});
-      setForm({
+      const baseForm = {
         phone: user.phone || '', school: user.school || '',
         career_interests: pd.career_interests || '', subjects: pd.subjects || '', goals: pd.goals || '',
         strengths: pd.strengths || '', challenges: pd.challenges || '', extracurriculars: pd.extracurriculars || '',
@@ -25,7 +28,11 @@ export default function Profile() {
         admitted_university: pd.admitted_university || '',
         ai_acknowledgment: pd.ai_acknowledgment || false, mentor_contact_ack: pd.mentor_contact_ack || false,
         mentor_bio: user.mentor_bio || '', mentor_linkedin: user.mentor_linkedin || '', mentor_instagram: user.mentor_instagram || '',
-      });
+      };
+      if (!restoredRef.current) {
+        setForm(draft ? { ...baseForm, ...draft } : baseForm);
+        restoredRef.current = true;
+      }
       if (user.role === 'mentee') api.getCareerInsights(user.id).then(setInsights).catch(() => {});
     }
   }, [user]);
@@ -55,6 +62,7 @@ export default function Profile() {
       return;
     }
     await refreshUser();
+    clearDraft();
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -63,6 +71,7 @@ export default function Profile() {
     <div className="max-w-3xl space-y-6">
       <h1 className="font-display text-3xl font-bold">My Profile</h1>
       {saved && <div className="bg-green-50 text-green-700 p-4 rounded-xl">✅ Profile saved successfully!</div>}
+      {lastSaved && !saved && <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs p-2 rounded-lg">💾 Draft autosaved at {lastSaved.toLocaleTimeString()}</div>}
       {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl">{error}</div>}
 
       <form onSubmit={handleSave} className="card-glow space-y-4">

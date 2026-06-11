@@ -4,6 +4,10 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
+router.get('/timeline/public', (req, res) => {
+  res.json(db.prepare('SELECT id, period, event, description FROM program_timeline WHERE is_active = 1 ORDER BY sort_order').all());
+});
+
 router.get('/timeline', authenticate, (req, res) => {
   res.json(db.prepare('SELECT * FROM program_timeline WHERE is_active = 1 ORDER BY sort_order').all());
 });
@@ -57,6 +61,26 @@ router.get('/history', authenticate, requireRole('admin'), (req, res) => {
   const audit = db.prepare(`SELECT l.*, u.name as admin_name FROM admin_audit_log l JOIN users u ON l.admin_id=u.id ORDER BY l.created_at DESC LIMIT ?`).all(100);
   const logins = db.prepare('SELECT * FROM login_attempts ORDER BY created_at DESC LIMIT 100').all();
   res.json({ platform_history: logs, activity_log: activity, admin_audit: audit, login_attempts: logins });
+});
+
+router.get('/history/export', authenticate, requireRole('admin'), (req, res) => {
+  const logs = db.prepare('SELECT * FROM platform_history ORDER BY created_at ASC').all();
+  const activity = db.prepare(`SELECT a.created_at, u.name, u.role, a.action, a.details FROM activity_log a JOIN users u ON a.user_id=u.id ORDER BY a.created_at ASC`).all();
+  const audit = db.prepare(`SELECT l.created_at, u.name as admin_name, l.action, l.target_type, l.target_id, l.details FROM admin_audit_log l JOIN users u ON l.admin_id=u.id ORDER BY l.created_at ASC`).all();
+  const logins = db.prepare('SELECT * FROM login_attempts ORDER BY created_at ASC').all();
+
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [
+    'Type,Timestamp,User,Role,Action,Target,Details',
+    ...logs.map(l => ['platform_history', l.created_at, l.user_name, l.user_role, l.action, l.target_type, l.details].map(esc).join(',')),
+    ...activity.map(l => ['activity', l.created_at, l.name, l.role, l.action, '', l.details].map(esc).join(',')),
+    ...audit.map(l => ['audit', l.created_at, l.admin_name, 'admin', l.action, l.target_type, l.details].map(esc).join(',')),
+    ...logins.map(l => ['login', l.created_at, l.identifier, l.role, l.success ? 'success' : 'failed', l.ip, ''].map(esc).join(',')),
+  ];
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename=eccp-platform-history-${new Date().toISOString().split('T')[0]}.csv`);
+  res.send(rows.join('\n'));
 });
 
 router.post('/wellness', authenticate, requireRole('mentee'), (req, res) => {

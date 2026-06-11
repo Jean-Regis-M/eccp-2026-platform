@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
+import ThemeToggle from './ThemeToggle';
 
 const navItems = {
   mentee: [
@@ -117,7 +118,7 @@ export default function Layout({ children }) {
       </aside>
 
       <main className="flex-1 md:ml-64 min-w-0 w-full">
-        <header className="bg-white/80 backdrop-blur border-b px-4 md:px-8 py-4 sticky top-0 z-20 shadow-sm">
+        <header className="bg-white/80 dark:bg-equity-navy/90 backdrop-blur border-b dark:border-slate-700 px-4 md:px-8 py-4 sticky top-0 z-20 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
@@ -130,13 +131,16 @@ export default function Layout({ children }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <h2 className="font-display font-semibold text-equity-dark text-base md:text-lg truncate">
+              <h2 className="font-display font-semibold text-equity-dark dark:text-white text-base md:text-lg truncate">
                 {items.find(i => i.to === location.pathname)?.label || 'ECCP Platform'}
               </h2>
             </div>
-            <span className="text-xs text-gray-400 hidden lg:block shrink-0">
-              Equity College Counselling Program • Rwanda
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <ThemeToggle className="bg-gray-100 dark:bg-white/10 text-equity-dark dark:text-white hover:bg-gray-200 dark:hover:bg-white/20" />
+              <span className="text-xs text-gray-400 hidden lg:block">
+                Equity College Counselling Program • Rwanda
+              </span>
+            </div>
           </div>
         </header>
         <div className="p-4 md:p-8 animate-fade-in">{children}</div>

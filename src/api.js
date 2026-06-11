@@ -8,13 +8,16 @@ function getHeaders() {
   };
 }
 
-export async function checkApiHealth() {
-  try {
-    const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(4000) });
-    return res.ok;
-  } catch {
-    return false;
+export async function checkApiHealth(retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(5000) });
+      if (res.ok) return true;
+    } catch {
+      if (i < retries - 1) await new Promise(r => setTimeout(r, 800));
+    }
   }
+  return false;
 }
 
 async function request(url, options = {}) {
@@ -30,26 +33,37 @@ async function request(url, options = {}) {
     );
   }
   const data = await res.json().catch(() => ({}));
-  if (res.status === 401 && localStorage.getItem('eccp_token')) {
+  if (res.status === 401 && localStorage.getItem('eccp_token') && !url.includes('/auth/me')) {
     localStorage.removeItem('eccp_token');
+    const returnPath = window.location.pathname + window.location.search;
+    if (!returnPath.startsWith('/login') && returnPath !== '/') {
+      sessionStorage.setItem('eccp_last_path', returnPath);
+    }
     if (!window.location.pathname.startsWith('/login') && window.location.pathname !== '/') {
-      window.location.replace('/');
+      window.location.replace('/login/' + (sessionStorage.getItem('eccp_last_role') || 'mentee'));
     }
   }
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
 
-function downloadFetch(url, filename) {
+async function downloadFetch(url, filename) {
   const token = localStorage.getItem('eccp_token');
-  return fetch(`${API}${url}`, { headers: { Authorization: `Bearer ${token}` } })
-    .then(res => res.blob())
-    .then(blob => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
-    });
+  let res;
+  try {
+    res = await fetch(`${API}${url}`, { headers: { Authorization: `Bearer ${token}` } });
+  } catch {
+    throw new Error('Cannot reach the server. Run "npm run dev" and try again.');
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Download failed');
+  }
+  const blob = await res.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
 }
 
 export const api = {
@@ -81,6 +95,7 @@ export const api = {
   getRankings: () => request('/users/rankings'),
   getMyProgress: () => request('/users/my-progress'),
   exportProfiles: () => downloadFetch('/users/export/profiles', 'eccp-scholar-profiles.csv'),
+  downloadScholarPdf: (id, pf) => downloadFetch(`/users/export/scholar-pdf/${id}`, `ECCP-Scholar-${pf || id}.pdf`),
   exportRankings: () => downloadFetch('/users/export/rankings', 'eccp-scholar-rankings.csv'),
   getAllUsers: () => request('/users/admin/all'),
   createUser: (data) => request('/users/admin/create', { method: 'POST', body: JSON.stringify(data) }),
@@ -131,6 +146,7 @@ export const api = {
   mentorResetMenteePassword: (id, password) => request(`/auth/mentor-reset-mentee/${id}`, { method: 'POST', body: JSON.stringify({ password }) }),
   downloadResourceFile: (filename, title) => downloadFetch(`/resources/file/${filename}`, `${title || filename}`),
 
+  getPublicTimeline: () => request('/platform/timeline/public'),
   getTimeline: () => request('/platform/timeline'),
   createTimelineItem: (data) => request('/platform/timeline', { method: 'POST', body: JSON.stringify(data) }),
   updateTimelineItem: (id, data) => request(`/platform/timeline/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -138,6 +154,7 @@ export const api = {
   getPlatformContent: () => request('/platform/content'),
   updatePlatformContent: (data) => request('/platform/content', { method: 'PUT', body: JSON.stringify(data) }),
   getPlatformHistory: () => request('/platform/history'),
+  downloadPlatformHistory: () => downloadFetch('/platform/history/export', `eccp-platform-history-${new Date().toISOString().split('T')[0]}.csv`),
   submitWellness: (stress_level) => request('/platform/wellness', { method: 'POST', body: JSON.stringify({ stress_level }) }),
 
   getResources: (category) => request(`/resources${category ? `?category=${encodeURIComponent(category)}` : ''}`),
