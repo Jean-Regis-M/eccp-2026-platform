@@ -15,6 +15,6 @@ export default function Logo({ className = 'w-10 h-10', alt = 'ECCP', layout, ic
       alt={alt}
       className={`${sizeClass} rounded-lg object-contain`}
       onError={(e) => { e.target.onerror = null; e.target.src = '/logo.svg'; }}
-    );
+    />
   );
 }

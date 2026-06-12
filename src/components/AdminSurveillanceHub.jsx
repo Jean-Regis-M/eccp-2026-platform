@@ -85,8 +85,10 @@ export default function AdminSurveillanceHub() {
         </div>
         <div className="col-span-1">
           <div className="space-y-3">
-            {[auditLogs.length, 'Total Events', 'text-equity-red'],
-            [filteredLogs.length, 'Filtered Events', 'text-equity-navy']}.map(([value, label, color]) => (
+            {[
+              { value: auditLogs.length, label: 'Total Events', color: 'text-equity-red' },
+              { value: filteredLogs.length, label: 'Filtered Events', color: 'text-equity-navy' }
+            ].map(({ value, label, color }) => (
               <div key={label} className="text-center">
                 <p className={`text-2xl font-bold ${color}`}>{value}</p>
                 <p className="text-sm text-gray-500">{label}</p>

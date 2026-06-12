@@ -39,7 +39,7 @@ export default function Rankings() {
           rankingsCount: rankings.length
         },
         user
-      );
+      });
     } catch (e) { alert(e.message); }
     setExporting(false);
   };

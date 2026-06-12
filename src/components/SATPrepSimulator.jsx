@@ -1,51 +1,42 @@
 import React, { useState } from 'react';
 
-interface PrepQuestion {
-  id: string;
-  type: 'Math' | 'Reading' | 'IELTS_Vocab';
-  question: string;
-  options: string[];
-  correctIdx: number;
-  explanation: string;
-}
+const testQuestions = [
+  {
+    id: 'sat-m-01',
+    type: 'Math',
+    question: "If 3x + 15 = 2x - 4, what is the value of 5x?",
+    options: ["-95", "-19", "-5", "5"],
+    correctIdx: 0,
+    explanation: "Subtracting 2x from both sides yields x + 15 = -4. Subtracting 15 from both sides yields x = -19. Multiplying by 5 gives 5x = -95."
+  },
+  {
+    id: 'sat-r-01',
+    type: 'Reading',
+    question: "The passage primarily serves to:",
+    options: [
+      "Describe a beautiful landscape",
+      "Argue for environmental conservation",
+      "Narrate a personal experience",
+      "Criticize urban development"
+    ],
+    correctIdx: 1,
+    explanation: "The main purpose of the passage is to persuade readers to support environmental conservation efforts."
+  },
+  {
+    id: 'sat-v-01',
+    type: 'IELTS_Vocab',
+    question: "Which word best completes the sentence: The professor's lecture was ___ and difficult to follow.",
+    options: ["clear", "concise", "mundane", "convoluted"],
+    correctIdx: 3,
+    explanation: "Convoluted means overly complicated and difficult to understand, which fits the context."
+  }
+];
 
-export function SATPrepSimulator() {
+export default function SATPrepSimulator() {
   const [activeIdx, setActiveIdx] = useState(0);
-  const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
+  const [selectedOpt, setSelectedOpt] = useState(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
-
-  const testQuestions: PrepQuestion[] = [
-    {
-      id: 'sat-m-01',
-      type: 'Math',
-      question: "If 3x + 15 = 2x - 4, what is the value of 5x?",
-      options: ["-95", "-19", "-5", "5"],
-      correctIdx: 0,
-      explanation: "Subtracting 2x from both sides yields x + 15 = -4. Subtracting 15 from both sides yields x = -19. Multiplying by 5 gives 5x = -95."
-    },
-    {
-      id: 'sat-r-01',
-      type: 'Reading',
-      question: "The passage primarily serves to:",
-      options: [
-        "Describe a beautiful landscape",
-        "Argue for environmental conservation",
-        "Narrate a personal experience",
-        "Criticize urban development"
-      ],
-      correctIdx: 1,
-      explanation: "The main purpose of the passage is to persuade readers to support environmental conservation efforts."
-    },
-    {
-      id: 'sat-v-01',
-      type: 'IELTS_Vocab',
-      question: "Which word best completes the sentence: The professor's lecture was ___ and difficult to follow.",
-      options: ["clear", "concise", "mundane", "convoluted"],
-      correctIdx: 3,
-      explanation: "Convoluted means overly complicated and difficult to understand, which fits the context."
-    }
-  ];
 
   const currentQ = testQuestions[activeIdx];
 

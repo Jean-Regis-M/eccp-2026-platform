@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 
-export function StaggeredParent({ children }) {
+export default function StaggeredParent({ children }) {
   return (
     <motion.div
       initial="hidden"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal } from './Modal';
+import Modal from './Modal';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useECCPState } from '../hooks/useECCPState';

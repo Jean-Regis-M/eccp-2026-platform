@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useECCPState } from '../hooks/useECCPState';
 import { useAuth } from '../context/AuthContext';
-import { GlobalOpportunity } from '../types';
 
 const GlobalOpportunitiesTracker = () => {
   const { opportunities, addOpportunityByAdmin, deleteOpportunityByAdmin } = useECCPState();
@@ -10,9 +9,9 @@ const GlobalOpportunitiesTracker = () => {
   const [newOpportunity, setNewOpportunity] = useState({
     title: '',
     provider: '',
-    category: 'fellowship' as const,
+    category: 'fellowship',
     fieldOfStudy: '',
-    region: 'Africa' as const,
+    region: 'Africa',
     openDate: '',
     deadline: '',
     stipendAmount: '',
@@ -22,7 +21,7 @@ const GlobalOpportunitiesTracker = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Opportunities');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState(null);
 
   // Handle input changes for new opportunity form
   const handleInputChange = (e) => {
@@ -37,7 +36,7 @@ const GlobalOpportunitiesTracker = () => {
 
   // Validate the opportunity form
   const validateForm = () => {
-    const errors: string[] = [];
+    const errors = [];
 
     if (!newOpportunity.title.trim()) {
       errors.push('Title is required');
@@ -54,7 +53,6 @@ const GlobalOpportunitiesTracker = () => {
     // Basic date validation - check if it looks like a date
     if (newOpportunity.deadline.trim() && !/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$|^[A-Za-z]+ \d{1,2}$|^\d{1,2} [A-Za-z]+$/.test(newOpportunity.deadline.trim())) {
       // Allow various date formats but note if it doesn't match common patterns
-      // This is not an error, just a format notice
     }
 
     return errors;
@@ -81,7 +79,7 @@ const GlobalOpportunitiesTracker = () => {
         .map((field) => field.trim())
         .filter(Boolean);
 
-      const opportunity: Omit<GlobalOpportunity, 'id'> = {
+      const opportunity = {
         title: newOpportunity.title.trim(),
         provider: newOpportunity.provider.trim(),
         category: newOpportunity.category,
@@ -101,9 +99,9 @@ const GlobalOpportunitiesTracker = () => {
       setNewOpportunity({
         title: '',
         provider: '',
-        category: 'fellowship' as const,
+        category: 'fellowship',
         fieldOfStudy: '',
-        region: 'Africa' as const,
+        region: 'Africa',
         openDate: '',
         deadline: '',
         stipendAmount: '',
@@ -127,11 +125,11 @@ const GlobalOpportunitiesTracker = () => {
 
       const matchesCategory =
         selectedCategory === 'All Opportunities' ||
-        selectedCategory === 'Government Scholarships' && op.category === 'government' ||
-        selectedCategory === 'Global Fellowships' && op.category === 'fellowship' ||
-        selectedCategory === 'African Regionals' && op.category === 'local_regional' &&
-        op.region === 'Africa' ||
-        selectedCategory === 'Chinese Excellence' && op.category === 'china_excellence';
+        (selectedCategory === 'Government Scholarships' && op.category === 'government') ||
+        (selectedCategory === 'Global Fellowships' && op.category === 'fellowship') ||
+        (selectedCategory === 'African Regionals' && op.category === 'local_regional' &&
+        op.region === 'Africa') ||
+        (selectedCategory === 'Chinese Excellence' && op.category === 'china_excellence');
 
       return matchesSearch && matchesCategory;
     })
@@ -452,92 +450,6 @@ const GlobalOpportunitiesTracker = () => {
             </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-};
-
-export default GlobalOpportunitiesTracker;>
-                      <option value="America">America</option>
-                      <option value="Global">Global</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Application Window (Month)</label>
-                    <input
-                      type="text"
-                      name="openDate"
-                      value={newOpportunity.openDate}
-                      onChange={handleInputChange}
-                      placeholder="e.g., October"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-equity-red"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Deadline (Date)</label>
-                    <input
-                      type="text"
-                      name="deadline"
-                      value={newOpportunity.deadline}
-                      onChange={handleInputChange}
-                      placeholder="e.g., February 20"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-equity-red"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Stipend/Funding Amount</label>
-                    <input
-                      type="text"
-                      name="stipendAmount"
-                      value={newOpportunity.stipendAmount}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 3,500 TRY/month stipend + Full Accommodation"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-equity-red"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Eligibility Requirements</label>
-                    <textarea
-                      name="eligibility"
-                      value={newOpportunity.eligibility}
-                      onChange={handleInputChange}
-                      rows="4"
-                      placeholder="Describe eligibility criteria..."
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-equity-red"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Official Website (Optional)</label>
-                    <input
-                      type="text"
-                      name="officialUrl"
-                      value={newOpportunity.officialUrl}
-                      onChange={handleInputChange}
-                      placeholder="https://example.com"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-equity-red"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddModalOpen(false)}
-                    className="px-4 py-2 border border-slate-300 rounded-md hover:bg-slate-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                  >
-                    Add Opportunity
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </>
       )}
     </div>
   );

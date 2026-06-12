@@ -11,7 +11,8 @@
     "build": "vite build",
     "start": "node server/index.js",
     "seed": "node server/seed.js",
-    "setup": "node scripts/check-env.js"
+    "setup": "node scripts/check-env.js",
+    "test": "vitest run"
   },
   "engines": {
     "node": ">=20 <=22"
@@ -31,14 +32,19 @@
     "uuid": "^11.0.3"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.0",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.49",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.0",
+    "supertest": "^7.2.2",
     "tailwindcss": "^3.4.17",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^4.1.8"
   }
 }
