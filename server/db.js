@@ -32,9 +32,14 @@ const init = async () => {
         mentor_photo TEXT DEFAULT '',
         is_active INTEGER DEFAULT 1,
         last_login TIMESTAMPTZ,
-        created_at TIMESTAMPTZ DEFAULT NOW()
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        must_change_password BOOLEAN DEFAULT FALSE
       );
-      // ... expand full schema here as needed, but for now ensure connectivity ...
+      CREATE TABLE IF NOT EXISTS token_blacklist (
+        id SERIAL PRIMARY KEY,
+        token TEXT UNIQUE NOT NULL,
+        revoked_at TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
     console.log('Database connected to PostgreSQL');
   } catch (err) {
