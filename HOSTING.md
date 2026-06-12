@@ -117,6 +117,7 @@ SMTP_PORT=587
 SMTP_USER=eccpmentor.regismukiza@gmail.com
 SMTP_PASS=your-gmail-app-password
 DB_PATH=/data/eccp.db
+ALLOWED_ORIGIN=https://your-frontend-domain.com
 ```
 
 Generate `JWT_SECRET` in PowerShell:
