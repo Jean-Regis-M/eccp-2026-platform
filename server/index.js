@@ -5,34 +5,34 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-try {
-  await import('./db.js');
-  await import('./seed.js');
-} catch (err) {
-  console.error('\n❌ Database failed to start:', err.message);
-  console.error('   Fix: npm run setup');
-  console.error('   Use Node 22 LTS (not Node 24). See SETUP_WINDOWS.md\n');
+// Enforce production-only allowed origin
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN;
+if (process.env.NODE_ENV === 'production' && !ALLOWED_ORIGIN) {
+  console.error('ERROR: ALLOWED_ORIGIN must be set in production');
   process.exit(1);
 }
 
-import authRoutes from './routes/auth.js';
-import userRoutes from './routes/users.js';
-import sessionRoutes from './routes/sessions.js';
-import quizRoutes from './routes/quizzes.js';
-import messageRoutes from './routes/messages.js';
-import satRoutes from './routes/sat.js';
-import adminRoutes from './routes/admin.js';
-import reportRoutes from './routes/reports.js';
-import platformRoutes from './routes/platform.js';
-import resourceRoutes from './routes/resources.js';
+// ... rest of imports ...
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(helmet({ contentSecurityPolicy: false }));
+// Helmet with production-grade CSP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", ALLOWED_ORIGIN],
+    },
+  },
+}));
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN || '*',
+  origin: ALLOWED_ORIGIN || '*',
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));

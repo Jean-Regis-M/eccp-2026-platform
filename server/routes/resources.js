@@ -1,20 +1,7 @@
 import { Router } from 'express';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import { upload } from '../utils/storage.js';
 import db, { logHistory } from '../db.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: uploadDir,
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`),
-});
-const upload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } });
 
 const CATEGORIES = ['SAT Prep', 'Essay Writing', 'Recommendation Letters', 'Financial Aid', 'University Research', 'Personal Statement', 'General Resources'];
 
@@ -52,15 +39,15 @@ router.post('/upload', authenticate, requireRole('admin', 'mentor'), upload.sing
   const { category, title, description, resource_type } = req.body;
   if (!req.file) return res.status(400).json({ error: 'File required' });
   const mentorId = req.user.role === 'mentor' ? req.user.id : null;
+  // Use location provided by S3
   const r = db.prepare(`INSERT INTO resources (category, title, description, resource_type, file_path, mentor_id, created_by, is_global)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 1)`).run(category, title, description || '', resource_type || 'pdf', `/api/resources/file/${req.file.filename}`, mentorId, req.user.id);
-  res.json({ id: r.lastInsertRowid, file: req.file.filename });
+    VALUES (?, ?, ?, ?, ?, ?, ?, 1)`).run(category, title, description || '', resource_type || 'pdf', req.file.location, mentorId, req.user.id);
+  res.json({ id: r.lastInsertRowid, location: req.file.location });
 });
 
 router.get('/file/:filename', authenticate, (req, res) => {
-  const fp = path.join(uploadDir, path.basename(req.params.filename));
-  if (!fs.existsSync(fp)) return res.status(404).json({ error: 'Not found' });
-  res.download(fp);
+  // Redirect to the stored S3 URL
+  res.redirect(req.params.filename);
 });
 
 router.delete('/:id', authenticate, requireRole('admin', 'mentor'), (req, res) => {
