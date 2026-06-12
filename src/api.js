@@ -1,4 +1,4 @@
-const API = import.meta.env.VITE_API_URL || '/api';
+const API = import.meta.env.VITE_API_URL || '';
 
 function getHeaders() {
   const token = localStorage.getItem('eccp_token');
