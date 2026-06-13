@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { checkApiHealth } from '../api';
 import { getSavedPath } from '../components/RoutePersistence';
 import Logo from '../components/Logo';
+import ThemeToggle from '../components/ThemeToggle';
 
 const roleConfig = {
   mentee: { title: 'Scholar Login', subtitle: 'Enter your PF Number', identifierLabel: 'PF Number', identifierPlaceholder: 'e.g. 56647', icon: '🎓' },
