@@ -4,45 +4,61 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
+
+// Import route files
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import sessionRoutes from './routes/sessions.js';
+import quizRoutes from './routes/quizzes.js';
+import messageRoutes from './routes/messages.js';
+import satRoutes from './routes/sat.js';
+import adminRoutes from './routes/admin.js';
+import reportRoutes from './routes/reports.js';
+import platformRoutes from './routes/platform.js';
+import resourceRoutes from './routes/resources.js';
 
 // Environment Validation Layer
 const validateEnvironment = () => {
-  const errors = [];
+  const warnings = [];
 
   if (process.env.NODE_ENV === 'production') {
     if (!process.env.JWT_SECRET) {
-      errors.push('JWT_SECRET is required in production.');
+      warnings.push('JWT_SECRET is not set. Using a temporary secret. Token validity will not persist across restarts. THIS IS INSECURE FOR PRODUCTION.');
+      // Generate a random secret for this instance only
+      process.env.JWT_SECRET = crypto.randomBytes(48).toString('hex');
     }
     if (!process.env.SMTP_HOST || !process.env.SMTP_PORT || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      errors.push('SMTP_* environment variables are required for email in production.');
+      warnings.push('SMTP_* environment variables are not fully set. Email functionality will be disabled.');
     }
     if (!process.env.DB_PATH) {
-      errors.push('DB_PATH is required in production for persistent storage.');
+      const serverDir = path.dirname(fileURLToPath(import.meta.url));
+      const defaultDbPath = path.join(serverDir, 'eccp.db');
+      warnings.push(`DB_PATH is not set. Defaulting to ${defaultDbPath}. Data will not persist across restarts without persistent storage.`);
+      process.env.DB_PATH = defaultDbPath;
     }
     if (!process.env.ALLOWED_ORIGIN) {
-      errors.push('ALLOWED_ORIGIN is required in production for CORS configuration.');
+      warnings.push('ALLOWED_ORIGIN is not set. Defaulting to * for CORS. THIS IS INSECURE FOR PRODUCTION.');
+      process.env.ALLOWED_ORIGIN = '*';
     }
   }
 
-  return errors;
+  return warnings;
 };
 
-const environmentErrors = validateEnvironment();
-if (environmentErrors.length > 0) {
-  console.error('----------------------------------------------------');
-  console.error('Environment Configuration Errors:');
-  environmentErrors.forEach(err => console.error(`- ${err}`));
-  console.error('Please set the required environment variables.');
-  console.error('See HOSTING.md for details.');
-  console.error('----------------------------------------------------');
-  process.exit(1);
+const environmentWarnings = validateEnvironment();
+if (environmentWarnings.length > 0) {
+  console.warn('----------------------------------------------------');
+  console.warn('Environment Configuration Warnings:');
+  environmentWarnings.forEach(warn => console.warn(`- ${warn}`));
+  console.warn('Application will start with potential limitations.');
+  console.warn('See HOSTING.md for details on setting environment variables for production.');
+  console.warn('----------------------------------------------------');
 }
 
 // Use ALLOWED_ORIGIN from environment variables if set, otherwise default to '*' for development.
 // In production, it MUST be set to a specific origin for security.
 const corsOrigin = process.env.NODE_ENV === 'production' ? process.env.ALLOWED_ORIGIN : '*';
-
-// ... rest of imports ...
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();

@@ -33,9 +33,9 @@ db.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS token_blacklist (
-    id SERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     token TEXT UNIQUE NOT NULL,
-    revoked_at TIMESTAMPTZ DEFAULT NOW()
+    revoked_at TEXT DEFAULT (datetime('now'))
   );
 
   CREATE TABLE IF NOT EXISTS sessions (
