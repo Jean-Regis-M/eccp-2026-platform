@@ -359,9 +359,15 @@ query.prepare = function (text) {
   return db.prepare(sql);
 };
 
-export default query;
-
 export function logHistory(userId, userName, userRole, action, targetType = '', targetId = null, details = '') {
   db.prepare(`INSERT INTO platform_history (user_id, user_name, user_role, action, target_type, target_id, details) VALUES (?, ?, ?, ?, ?, ?, ?)`)
     .run(userId, userName, userRole, action, targetType, targetId, details);
 }
+
+// Export an object that has the query and prepare methods for backward compatibility with route files
+const dbModule = {
+  query,
+  prepare: query.prepare
+};
+
+export default dbModule;

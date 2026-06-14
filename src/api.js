@@ -11,7 +11,7 @@ function getHeaders() {
 export async function checkApiHealth(retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
-      const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(5000) });
+      const res = await fetch(`${API}/api/health`, { signal: AbortSignal.timeout(5000) });
       if (res.ok) return true;
     } catch {
       if (i < retries - 1) await new Promise(r => setTimeout(r, 800));
@@ -68,72 +68,72 @@ async function downloadFetch(url, filename) {
 
 export const api = {
   login: (identifier, password, role) =>
-    request('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password, role }) }),
-  me: () => request('/auth/me'),
+    request('/api/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password, role }) }),
+  me: () => request('/api/auth/me'),
   changePassword: (currentPassword, newPassword) =>
-    request('/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
+    request('/api/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
   resetPasswordRequest: (identifier, role) =>
-    request('/auth/reset-password-request', { method: 'POST', body: JSON.stringify({ identifier, role }) }),
+    request('/api/auth/reset-password-request', { method: 'POST', body: JSON.stringify({ identifier, role }) }),
   resetPassword: (token, newPassword) =>
-    request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, newPassword }) }),
+    request('/api/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, newPassword }) }),
 
-  getSessions: (search) => request(`/sessions${search ? `?search=${encodeURIComponent(search)}` : ''}`),
-  getTodaySession: () => request('/sessions/today'),
-  createSession: (data) => request('/sessions', { method: 'POST', body: JSON.stringify(data) }),
-  updateSession: (id, data) => request(`/sessions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  markAttendance: (id, attendance) => request(`/sessions/${id}/attendance`, { method: 'PUT', body: JSON.stringify({ attendance }) }),
-  getAttendance: (id) => request(`/sessions/${id}/attendance`),
-  submitFeedback: (id, data) => request(`/sessions/${id}/feedback`, { method: 'POST', body: JSON.stringify(data) }),
-  getSessionFeedback: (id) => request(`/sessions/${id}/feedback`),
-  getWeeklyReport: (params) => request(`/sessions/reports/weekly?${new URLSearchParams(params)}`),
-  downloadWeeklyReport: (params) => downloadFetch(`/sessions/reports/weekly?${new URLSearchParams({ ...params, format: 'csv' })}`, `eccp-weekly-${params.week_start}.csv`),
+  getSessions: (search) => request(`/api/sessions${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  getTodaySession: () => request('/api/sessions/today'),
+  createSession: (data) => request('/api/sessions', { method: 'POST', body: JSON.stringify(data) }),
+  updateSession: (id, data) => request(`/api/sessions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  markAttendance: (id, attendance) => request(`/api/sessions/${id}/attendance`, { method: 'PUT', body: JSON.stringify({ attendance }) }),
+  getAttendance: (id) => request(`/api/sessions/${id}/attendance`),
+  submitFeedback: (id, data) => request(`/api/sessions/${id}/feedback`, { method: 'POST', body: JSON.stringify(data) }),
+  getSessionFeedback: (id) => request(`/api/sessions/${id}/feedback`),
+  getWeeklyReport: (params) => request(`/api/sessions/reports/weekly?${new URLSearchParams(params)}`),
+  downloadWeeklyReport: (params) => downloadFetch(`/api/sessions/reports/weekly?${new URLSearchParams({ ...params, format: 'csv' })}`, `eccp-weekly-${params.week_start}.csv`),
 
-  getMentees: () => request('/users/mentees'),
-  getMentors: () => request('/users/mentors'),
-  getUser: (id) => request(`/users/${id}`),
-  updateProfile: (data) => request('/users/profile', { method: 'PUT', body: JSON.stringify(data) }),
-  getRankings: () => request('/users/rankings'),
-  getMyProgress: () => request('/users/my-progress'),
-  exportProfiles: () => downloadFetch('/users/export/profiles', 'eccp-scholar-profiles.csv'),
-  downloadScholarPdf: (id, pf) => downloadFetch(`/users/export/scholar-pdf/${id}`, `ECCP-Scholar-${pf || id}.pdf`),
-  exportRankings: () => downloadFetch('/users/export/rankings', 'eccp-scholar-rankings.csv'),
-  getAllUsers: () => request('/users/admin/all'),
-  createUser: (data) => request('/users/admin/create', { method: 'POST', body: JSON.stringify(data) }),
-  updateUser: (id, data) => request(`/users/admin/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  resetUserPassword: (id) => request(`/users/admin/reset-password/${id}`, { method: 'POST', body: JSON.stringify({}) }),
+  getMentees: () => request('/api/users/mentees'),
+  getMentors: () => request('/api/users/mentors'),
+  getUser: (id) => request(`/api/users/${id}`),
+  updateProfile: (data) => request('/api/users/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  getRankings: () => request('/api/users/rankings'),
+  getMyProgress: () => request('/api/users/my-progress'),
+  exportProfiles: () => downloadFetch('/api/users/export/profiles', 'eccp-scholar-profiles.csv'),
+  downloadScholarPdf: (id, pf) => downloadFetch(`/api/users/export/scholar-pdf/${id}`, `ECCP-Scholar-${pf || id}.pdf`),
+  exportRankings: () => downloadFetch('/api/users/export/rankings', 'eccp-scholar-rankings.csv'),
+  getAllUsers: () => request('/api/users/admin/all'),
+  createUser: (data) => request('/api/users/admin/create', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (id, data) => request(`/api/users/admin/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  resetUserPassword: (id) => request(`/api/users/admin/reset-password/${id}`, { method: 'POST', body: JSON.stringify({}) }),
 
-  getQuizzes: () => request('/quizzes'),
-  getQuiz: (id) => request(`/quizzes/${id}`),
-  createQuiz: (data) => request('/quizzes', { method: 'POST', body: JSON.stringify(data) }),
-  submitQuiz: (id, answers) => request(`/quizzes/${id}/submit`, { method: 'POST', body: JSON.stringify({ answers }) }),
-  closeQuiz: (id) => request(`/quizzes/${id}/close`, { method: 'PUT' }),
+  getQuizzes: () => request('/api/quizzes'),
+  getQuiz: (id) => request(`/api/quizzes/${id}`),
+  createQuiz: (data) => request('/api/quizzes', { method: 'POST', body: JSON.stringify(data) }),
+  submitQuiz: (id, answers) => request(`/api/quizzes/${id}/submit`, { method: 'POST', body: JSON.stringify({ answers }) }),
+  closeQuiz: (id) => request(`/api/quizzes/${id}/close`, { method: 'PUT' }),
 
-  getMessages: () => request('/messages'),
-  sendMessage: (data) => request('/messages', { method: 'POST', body: JSON.stringify(data) }),
-  replyMessage: (id, content) => request(`/messages/${id}/reply`, { method: 'POST', body: JSON.stringify({ content }) }),
-  markRead: (id) => request(`/messages/${id}/read`, { method: 'POST' }),
+  getMessages: () => request('/api/messages'),
+  sendMessage: (data) => request('/api/messages', { method: 'POST', body: JSON.stringify(data) }),
+  replyMessage: (id, content) => request(`/api/messages/${id}/reply`, { method: 'POST', body: JSON.stringify({ content }) }),
+  markRead: (id) => request(`/api/messages/${id}/read`, { method: 'POST' }),
 
-  getSatExams: () => request('/sat'),
-  createSatExam: (data) => request('/sat', { method: 'POST', body: JSON.stringify(data) }),
-  closeSatExam: (id) => request(`/sat/${id}/close`, { method: 'PUT' }),
-  submitSat: (id, data) => request(`/sat/${id}/submit`, { method: 'POST', body: JSON.stringify(data) }),
-  getSatSubmissions: (id) => request(`/sat/${id}/submissions`),
+  getSatExams: () => request('/api/sat'),
+  createSatExam: (data) => request('/api/sat', { method: 'POST', body: JSON.stringify(data) }),
+  closeSatExam: (id) => request(`/api/sat/${id}/close`, { method: 'PUT' }),
+  submitSat: (id, data) => request(`/api/sat/${id}/submit`, { method: 'POST', body: JSON.stringify(data) }),
+  getSatSubmissions: (id) => request(`/api/sat/${id}/submissions`),
 
-  getAdminDashboard: () => request('/admin/dashboard'),
-  getSettings: () => request('/admin/settings'),
-  updateSettings: (data) => request('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
-  sendCredentials: (id) => request(`/admin/send-credentials/${id}`, { method: 'POST' }),
-  sendReminders: () => request('/admin/send-reminders', { method: 'POST' }),
-  getActivity: () => request('/admin/activity'),
-  getAuditLog: () => request('/admin/audit-log'),
-  getEmailLog: () => request('/admin/email-log'),
-  getCareerInsights: (id) => request(`/admin/career-insights/${id}`),
+  getAdminDashboard: () => request('/api/admin/dashboard'),
+  getSettings: () => request('/api/admin/settings'),
+  updateSettings: (data) => request('/api/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  sendCredentials: (id) => request(`/api/admin/send-credentials/${id}`, { method: 'POST' }),
+  sendReminders: () => request('/api/admin/send-reminders', { method: 'POST' }),
+  getActivity: () => request('/api/admin/activity'),
+  getAuditLog: () => request('/api/admin/audit-log'),
+  getEmailLog: () => request('/api/admin/email-log'),
+  getCareerInsights: (id) => request(`/api/admin/career-insights/${id}`),
 
-  getMentorReportPreview: (params) => request(`/reports/mentor/preview?${new URLSearchParams(params)}`),
-  saveMentorReport: (data) => request('/reports/mentor/save', { method: 'POST', body: JSON.stringify(data) }),
-  downloadMentorReportPdf: (params) => downloadFetch(`/reports/mentor/pdf?${new URLSearchParams(params)}`, `ECCP-Weekly-Report.pdf`),
+  getMentorReportPreview: (params) => request(`/api/reports/mentor/preview?${new URLSearchParams(params)}`),
+  saveMentorReport: (data) => request('/api/reports/mentor/save', { method: 'POST', body: JSON.stringify(data) }),
+  downloadMentorReportPdf: (params) => downloadFetch(`/api/reports/mentor/pdf?${new URLSearchParams(params)}`, `ECCP-Weekly-Report.pdf`),
 
-  deleteSession: (id) => request(`/sessions/${id}`, { method: 'DELETE' }),
+  deleteSession: (id) => request(`/api/sessions/${id}`, { method: 'DELETE' }),
   uploadSessionFile: async (id, file) => {
     const token = localStorage.getItem('eccp_token');
     const fd = new FormData();
@@ -143,24 +143,24 @@ export const api = {
     if (!res.ok) throw new Error(data.error || 'Upload failed');
     return data;
   },
-  mentorResetMenteePassword: (id, password) => request(`/auth/mentor-reset-mentee/${id}`, { method: 'POST', body: JSON.stringify({ password }) }),
-  downloadResourceFile: (filename, title) => downloadFetch(`/resources/file/${filename}`, `${title || filename}`),
+  mentorResetMenteePassword: (id, password) => request(`/api/auth/mentor-reset-mentee/${id}`, { method: 'POST', body: JSON.stringify({ password }) }),
+  downloadResourceFile: (filename, title) => downloadFetch(`/api/resources/file/${filename}`, `${title || filename}`),
 
-  getPublicTimeline: () => request('/platform/timeline/public'),
-  getTimeline: () => request('/platform/timeline'),
-  createTimelineItem: (data) => request('/platform/timeline', { method: 'POST', body: JSON.stringify(data) }),
-  updateTimelineItem: (id, data) => request(`/platform/timeline/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteTimelineItem: (id) => request(`/platform/timeline/${id}`, { method: 'DELETE' }),
-  getPlatformContent: () => request('/platform/content'),
-  updatePlatformContent: (data) => request('/platform/content', { method: 'PUT', body: JSON.stringify(data) }),
-  getPlatformHistory: () => request('/platform/history'),
-  downloadPlatformHistory: () => downloadFetch('/platform/history/export', `eccp-platform-history-${new Date().toISOString().split('T')[0]}.csv`),
-  submitWellness: (stress_level) => request('/platform/wellness', { method: 'POST', body: JSON.stringify({ stress_level }) }),
+  getPublicTimeline: () => request('/api/platform/timeline/public'),
+  getTimeline: () => request('/api/platform/timeline'),
+  createTimelineItem: (data) => request('/api/platform/timeline', { method: 'POST', body: JSON.stringify(data) }),
+  updateTimelineItem: (id, data) => request(`/api/platform/timeline/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTimelineItem: (id) => request(`/api/platform/timeline/${id}`, { method: 'DELETE' }),
+  getPlatformContent: () => request('/api/platform/content'),
+  updatePlatformContent: (data) => request('/api/platform/content', { method: 'PUT', body: JSON.stringify(data) }),
+  getPlatformHistory: () => request('/api/platform/history'),
+  downloadPlatformHistory: () => downloadFetch('/api/platform/history/export', `eccp-platform-history-${new Date().toISOString().split('T')[0]}.csv`),
+  submitWellness: (stress_level) => request('/api/platform/wellness', { method: 'POST', body: JSON.stringify({ stress_level }) }),
 
-  getResources: (category) => request(`/resources${category ? `?category=${encodeURIComponent(category)}` : ''}`),
-  getResourceCategories: () => request('/resources/categories'),
-  createResource: (data) => request('/resources', { method: 'POST', body: JSON.stringify(data) }),
-  deleteResource: (id) => request(`/resources/${id}`, { method: 'DELETE' }),
+  getResources: (category) => request(`/api/resources${category ? `?category=${encodeURIComponent(category)}` : ''}`),
+  getResourceCategories: () => request('/api/resources/categories'),
+  createResource: (data) => request('/api/resources', { method: 'POST', body: JSON.stringify(data) }),
+  deleteResource: (id) => request(`/api/resources/${id}`, { method: 'DELETE' }),
   uploadResource: async (formData) => {
     const token = localStorage.getItem('eccp_token');
     const res = await fetch(`${API}/resources/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
