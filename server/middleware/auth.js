@@ -2,12 +2,7 @@ import jwt from 'jsonwebtoken';
 import db from '../db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET is not set in environment variables.');
-  console.error('Please set JWT_SECRET before starting the server.');
-  process.exit(1);
-}
-
+// JWT_SECRET is validated by validateEnvironment in server/index.js before routes are used.
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 export function generateToken(user) {
