@@ -1,12 +1,11 @@
 import jwt from 'jsonwebtoken';
 import db from '../db.js';
 
-let JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  console.warn('WARNING: JWT_SECRET is not set. Using a temporary secret. Token validity will not persist across restarts. THIS IS INSECURE FOR PRODUCTION.');
-  // Generate a random secret for this instance only
-  const crypto = await import('crypto');
-  JWT_SECRET = crypto.randomBytes(48).toString('hex');
+  console.error('FATAL: JWT_SECRET is not set in environment variables.');
+  console.error('Please set JWT_SECRET before starting the server.');
+  process.exit(1);
 }
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';

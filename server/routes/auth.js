@@ -14,7 +14,7 @@ router.post('/login', async (req, res) => {
 
   const user = await db.query(
     'SELECT * FROM users WHERE (email = $1 OR pf_number = $1) AND role = $2 AND is_active = 1',
-    [identifier, role]
+    [identifier, identifier, role]
   ).then(r => r.rows[0]);
 
   if (!user || !await bcrypt.compare(password, user.password_hash)) {

@@ -18,43 +18,41 @@ import reportRoutes from './routes/reports.js';
 import platformRoutes from './routes/platform.js';
 import resourceRoutes from './routes/resources.js';
 
+import db from './db.js';
+import winston from 'winston';
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'eccp-api' },
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+  ],
+});
+
 // Environment Validation Layer
 const validateEnvironment = () => {
-  const warnings = [];
-
   if (process.env.NODE_ENV === 'production') {
-    if (!process.env.JWT_SECRET) {
-      warnings.push('JWT_SECRET is not set. Using a temporary secret. Token validity will not persist across restarts. THIS IS INSECURE FOR PRODUCTION.');
-      // Generate a random secret for this instance only
-      process.env.JWT_SECRET = crypto.randomBytes(48).toString('hex');
+    const requiredVars = ['JWT_SECRET', 'DB_PATH', 'ALLOWED_ORIGIN'];
+    const missingVars = requiredVars.filter(varName => !process.env[varName]);
+    if (missingVars.length > 0) {
+      console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
+      console.error('Please set these variables before starting the server in production.');
+      process.exit(1);
     }
+
+    // Warn about SMTP if not set
     if (!process.env.SMTP_HOST || !process.env.SMTP_PORT || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      warnings.push('SMTP_* environment variables are not fully set. Email functionality will be disabled.');
-    }
-    if (!process.env.DB_PATH) {
-      const serverDir = path.dirname(fileURLToPath(import.meta.url));
-      const defaultDbPath = path.join(serverDir, 'eccp.db');
-      warnings.push(`DB_PATH is not set. Defaulting to ${defaultDbPath}. Data will not persist across restarts without persistent storage.`);
-      process.env.DB_PATH = defaultDbPath;
-    }
-    if (!process.env.ALLOWED_ORIGIN) {
-      warnings.push('ALLOWED_ORIGIN is not set. Defaulting to * for CORS. THIS IS INSECURE FOR PRODUCTION.');
-      process.env.ALLOWED_ORIGIN = '*';
+      console.warn('SMTP_* environment variables are not fully set. Email functionality will be disabled.');
     }
   }
-
-  return warnings;
 };
 
-const environmentWarnings = validateEnvironment();
-if (environmentWarnings.length > 0) {
-  console.warn('----------------------------------------------------');
-  console.warn('Environment Configuration Warnings:');
-  environmentWarnings.forEach(warn => console.warn(`- ${warn}`));
-  console.warn('Application will start with potential limitations.');
-  console.warn('See HOSTING.md for details on setting environment variables for production.');
-  console.warn('----------------------------------------------------');
-}
+validateEnvironment();
 
 // Use ALLOWED_ORIGIN from environment variables if set, otherwise default to '*' for development.
 // In production, it MUST be set to a specific origin for security.
@@ -83,8 +81,20 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
-app.use('/api/', limiter);
+app.set('trust proxy', 1);
+
+// Proper rate limiter config
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress;
+  },
+  skip: (req) => req.path === '/api/health',
+});
+app.use('/api', limiter);
 
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Too many login attempts' } });
 app.use('/api/auth/login', loginLimiter);
@@ -104,6 +114,30 @@ app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', program: 'ECCP 2026', version: '1.0.0' });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  logger.error(`Error: ${err.message}`, { stack: err.stack });
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+      // Only include stack in non-production
+      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+    }
+  });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });
 
 const distPath = path.join(__dirname, '..', 'dist');

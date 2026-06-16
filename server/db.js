@@ -330,7 +330,21 @@ function convertQuery(query) {
 
 function query(text, params) {
   try {
+    // Ensure params is an array
+    if (!Array.isArray(params)) {
+      params = [params];
+    }
+
     const sql = convertQuery(text);
+    // Count the number of placeholders in the converted SQL
+    const placeholderCount = (sql.match(/\?/g) || []).length;
+
+    // If we have fewer params than placeholders, pad with null
+    if (params.length < placeholderCount) {
+      params = [...params, ...Array(placeholderCount - params.length).fill(null)];
+    }
+    // If we have more, we'll use as is and let the database driver handle excess (which may cause error)
+
     const stmt = db.prepare(sql);
 
     // Determine if it's a SELECT query (case-insensitive, ignoring leading whitespace)
