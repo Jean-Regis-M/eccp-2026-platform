@@ -38,6 +38,14 @@ async function waitForApi(maxAttempts = 40) {
 }
 
 console.log('\n🚀 Starting ECCP 2026 Platform...\n');
+// In production, ensure JWT_SECRET is set before proceeding.
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.error('\n❌ Missing JWT_SECRET in environment variables.');
+  console.error('   Create a .env file with JWT_SECRET=... (see .env.example)');
+  console.error('   Then run: npm run dev\n');
+  process.exit(1);
+}
+
 console.log('   Step 1: API server (port 3001)');
 
 const server = run('node', ['server/index.js'], 'server');

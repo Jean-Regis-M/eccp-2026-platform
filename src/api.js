@@ -22,16 +22,32 @@ export async function checkApiHealth(retries = 3) {
 
 async function request(url, options = {}) {
   let res;
-  try {
-    res = await fetch(`${API}${url}`, {
-      ...options,
-      headers: { ...getHeaders(), ...(options.headers || {}) },
-    });
-  } catch {
-    throw new Error(
-      'Cannot reach the server. Run "npm run dev" in the project folder and wait until you see "Open: http://localhost:5173". Do not open the HTML file directly.'
-    );
+  let lastError;
+  const maxAttempts = 3;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      res = await fetch(`${API}${url}`, {
+        ...options,
+        headers: { ...getHeaders(), ...(options.headers || {}) },
+      });
+      // Network succeeded, break out of retry loop
+      break;
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxAttempts - 1) {
+        // Exponential backoff: 500ms, 1000ms, 2000ms ...
+        const delay = Math.min(500 * 2 ** attempt, 10000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        // Final attempt failed
+        throw new Error(
+          'Cannot reach the server after multiple attempts. Please check your connection or run "npm run dev" to start the backend.'
+        );
+      }
+    }
   }
+  if (!res) throw lastError; // safety
+
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && localStorage.getItem('eccp_token') && !url.includes('/auth/me')) {
     localStorage.removeItem('eccp_token');

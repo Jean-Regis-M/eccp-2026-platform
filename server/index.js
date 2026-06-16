@@ -36,18 +36,36 @@ const logger = winston.createLogger({
 
 // Environment Validation Layer
 const validateEnvironment = () => {
+  // Always check for JWT_SECRET; in production it must be set, in dev we can generate a fallback.
+  const jwtSecret = process.env.JWT_SECRET;
+  console.debug(`[validate] NODE_ENV=${process.env.NODE_ENV}, JWT_SECRET=${!!jwtSecret}`); // eslint-disable-line no-console
+  if (!jwtSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('❌ FATAL: JWT_SECRET is not set in environment variables.');
+      console.error('   Please set JWT_SECRET before starting the server.');
+      process.exit(1);
+    } else {
+      // Development: generate a temporary secret and warn.
+      const secret = crypto.randomBytes(32).toString('base64');
+      process.env.JWT_SECRET = secret;
+      console.warn('⚠️  JWT_SECRET not set. Generated a temporary secret for development.');
+      console.warn('   To persist across restarts, add JWT_SECRET=<your-secret> to a .env file.');
+    }
+  }
+
+  // In production, also verify other required variables.
   if (process.env.NODE_ENV === 'production') {
-    const requiredVars = ['JWT_SECRET', 'DB_PATH', 'ALLOWED_ORIGIN'];
+    const requiredVars = ['DB_PATH', 'ALLOWED_ORIGIN'];
     const missingVars = requiredVars.filter(varName => !process.env[varName]);
     if (missingVars.length > 0) {
-      console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
-      console.error('Please set these variables before starting the server in production.');
+      console.error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
+      console.error('   Please set these variables before starting the server in production.');
       process.exit(1);
     }
 
     // Warn about SMTP if not set
     if (!process.env.SMTP_HOST || !process.env.SMTP_PORT || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.warn('SMTP_* environment variables are not fully set. Email functionality will be disabled.');
+      console.warn('⚠️  SMTP_* environment variables are not fully set. Email functionality will be disabled.');
     }
   }
 };
@@ -61,6 +79,11 @@ const corsOrigin = process.env.NODE_ENV === 'production' ? process.env.ALLOWED_O
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Startup banner
+console.log('\n🔐 JWT secret loaded.');
+console.log(`🚀 Server starting on port ${PORT}`);
+console.log(`🌐 Allowed origin: ${corsOrigin}\n`);
 
 // Helmet with production-grade CSP
 app.use(helmet({
