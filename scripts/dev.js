@@ -5,6 +5,10 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const isWin = process.platform === 'win32';

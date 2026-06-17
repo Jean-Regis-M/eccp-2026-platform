@@ -55,7 +55,7 @@ const validateEnvironment = () => {
 
   // In production, also verify other required variables.
   if (process.env.NODE_ENV === 'production') {
-    const requiredVars = ['DB_PATH', 'ALLOWED_ORIGIN'];
+    const requiredVars = ['DATABASE_URL', 'ALLOWED_ORIGIN'];
     const missingVars = requiredVars.filter(varName => !process.env[varName]);
     if (missingVars.length > 0) {
       console.error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
@@ -135,8 +135,15 @@ app.use('/api/resources', resourceRoutes);
 app.use('/api/public', express.static(path.join(__dirname, '..', 'public')));
 app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', program: 'ECCP 2026', version: '1.0.0' });
+app.get('/api/health', async (req, res) => {
+  try {
+    // Simple database connectivity check
+    await db.query('SELECT 1');
+    res.json({ status: 'ok', program: 'ECCP 2026', version: '1.0.0', database: 'connected' });
+  } catch (err) {
+    console.error('Health check failed:', err);
+    res.status(500).json({ status: 'error', program: 'ECCP 2026', version: '1.0.0', database: 'disconnected', error: err.message });
+  }
 });
 
 // Error handling middleware

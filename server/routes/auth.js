@@ -12,16 +12,22 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Missing fields' });
   }
 
-  const user = await db.query(
-    'SELECT * FROM users WHERE (email = $1 OR pf_number = $1) AND role = $2 AND is_active = 1',
-    [identifier, identifier, role]
-  ).then(r => r.rows[0]);
+  try {
+    const userResult = await db.query(
+      'SELECT * FROM users WHERE (email = $1 OR pf_number = $1) AND role = $2 AND is_active = 1',
+      [identifier, identifier, role]
+    );
+    const user = userResult.rows[0];
 
-  if (!user || !await bcrypt.compare(password, user.password_hash)) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    res.json({ token: generateToken(user), user: { id: user.id, name: user.name, role: user.role } });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  res.json({ token: generateToken(user), user: { id: user.id, name: user.name, role: user.role } });
 });
 
 router.post('/logout', authenticate, async (req, res) => {
