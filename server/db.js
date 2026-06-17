@@ -356,7 +356,7 @@ async function initializeDatabase() {
       const settingsCount = parseInt(settingsResult.rows[0].c, 10);
       if (settingsCount === 0) {
         const settingsDefaults = {
-          mission: 'To empower Rwanda\\'s brightest scholars with world-class college counselling, mentorship, and digital tools that transform university dreams into reality.',
+          mission: 'To empower Rwanda\'s brightest scholars with world-class college counselling, mentorship, and digital tools that transform university dreams into reality.',
           vision: 'A digitally connected ECCP where every scholar receives personalized guidance, measurable progress, and unwavering support from induction to university acceptance.',
           quotes: JSON.stringify([
             'Persistence beats talent when talent does not persist.',
@@ -707,7 +707,9 @@ initializeDatabase().catch(err => {
 async function query(text, params) {
   try {
     // Ensure params is an array
-    if (!Array.isArray(params)) {
+    if (params == null) {
+      params = [];
+    } else if (!Array.isArray(params)) {
       params = [params];
     }
 
